@@ -1,10 +1,13 @@
 use futures::StreamExt;
+use libp2p::gossipsub::IdentTopic;
 use libp2p::identity::Keypair;
 use libp2p::request_response::ProtocolSupport;
+use libp2p::swarm;
 use libp2p::swarm::NetworkBehaviour;
 use libp2p::request_response;
 use libp2p::gossipsub;
 use libp2p::swarm::SwarmEvent;
+use libp2p::Multiaddr;
 use libp2p::StreamProtocol;
 
 
@@ -29,40 +32,69 @@ use tokio::sync::mpsc;
 // }
 
 
-pub struct ClientResponse {
-    pub peer: libp2p::PeerId,
-    pub data: PacketData
+pub struct NetworkHandle {
+    outgoing_commands: mpsc::Sender<PacketData>,
+    incoming_events: mpsc::Receiver<Response>
 }
 
-pub struct ServerResponse {
+impl NetworkHandle {
+
+    pub fn is_closed(&self) -> bool {
+        self.outgoing_commands.is_closed() || self.incoming_events.is_closed()
+    }
+
+    pub fn send_command_blocking(&self, command: PacketData) {
+        let _ = self.outgoing_commands.blocking_send(command);
+    }
+
+    pub async fn send_command(&self, command: PacketData) {
+        let _ = self.outgoing_commands.send(command).await;
+    }
+
+    pub fn get_event_blocking(&mut self) -> Option<Response> {
+        self.incoming_events.try_recv().ok()
+    }
+
+    pub async fn get_event(&mut self) -> Option<Response> {
+        self.incoming_events.recv().await
+    }
 
 }
 
-pub enum NetworkUpdate {
-    AliveWithAddr(String),
-    Disconnected,
+
+
+
+
+
+pub struct Network {
+    keypair: libp2p::identity::Keypair,
+
+    incoming_commands: mpsc::Receiver<PacketData>,
+    outgoing_events: mpsc::Sender<Response>,
+
+    chat: IdentTopic,
+
+    swarm: libp2p::Swarm<Behaviour>,
 }
 
+impl Network {
 
-pub enum Response {
-    Server(ServerResponse),
-    Client(ClientResponse),
-    Network(NetworkUpdate)
-}
-
+    pub fn new_server(key: Keypair, addr: Multiaddr) -> Result<(Self, NetworkHandle), Error> {
+        Self::new(key, addr, true)
+    }
 
 
-pub fn run(key: Keypair, server: bool, addr: libp2p::Multiaddr) -> (tokio::task::JoinHandle<Result<(), Error>>, mpsc::Sender<PacketData>, mpsc::Receiver<Response>) {
-
-    let (request_sender, mut request_reciever) = mpsc::channel::<PacketData>(64);
-    let (response_sender, response_reciever) = mpsc::channel::<Response>(128);
-
-
-    let handle = tokio::spawn(async move {
+    pub fn new_client(key: Keypair, addr: Multiaddr) -> Result<(Self, NetworkHandle), Error> {
+        Self::new(key, addr, false)
+    }
 
 
 
-        let mut swarm = libp2p::SwarmBuilder::with_existing_identity(key)
+    fn new(key: Keypair, addr: Multiaddr, is_server: bool) -> Result<(Self, NetworkHandle), Error> {
+        let (outgoing_commands, incoming_commands) = mpsc::channel::<PacketData>(64);
+        let (outgoing_events, incoming_events) = mpsc::channel(128);
+ 
+        let mut swarm = libp2p::SwarmBuilder::with_existing_identity(key.clone())
         .with_tokio().with_quic()
         .with_behaviour(|key| Behaviour{
             request: request_response::cbor::Behaviour::<ServerUpdate, ()>::new(
@@ -78,67 +110,103 @@ pub fn run(key: Keypair, server: bool, addr: libp2p::Multiaddr) -> (tokio::task:
         })?
         .build();
 
-        if server {
+        if is_server {
             swarm.listen_on(addr)?;
         } else {
             swarm.dial(addr)?;
         }
 
-        
-
-
         let chat = gossipsub::IdentTopic::new("chat");
         swarm.behaviour_mut().gossipsub.subscribe(&chat)?;
 
 
-        
+
+        let server = Self{
+            keypair: key,
+            incoming_commands,
+            outgoing_events,
+            chat: IdentTopic::new("chat"),
+            swarm,
+        };
+
+        let handle = NetworkHandle{
+            outgoing_commands,
+            incoming_events,
+        };
+
+        return Ok((server, handle))
+    }
 
 
-        loop {
 
 
-            match request_reciever.recv().await {
-                Some(_request) => { 
-                    todo!() 
-                }
-                None => ()
+
+}
+
+
+impl Network {
+    async fn handle_event(&mut self, event: swarm::SwarmEvent<Event>) {
+        match event {
+            SwarmEvent::NewListenAddr { address, .. } => {
+                println!("Internal: Alive with addr");
+                let _ = self.outgoing_events.send(Response::Network(NetworkUpdate::AliveWithAddr(address.to_string()))).await;
+            },
+            SwarmEvent::ConnectionEstablished { peer_id, .. } => {
+                self.swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
+                println!("Internal: Connection established");
             }
-
-
-            match swarm.select_next_some().await {
-                SwarmEvent::NewListenAddr { address, .. } => {
-                    let _ = response_sender.send(Response::Network(NetworkUpdate::AliveWithAddr(address.to_string()))).await;
-                },
-                SwarmEvent::ConnectionEstablished { peer_id, .. } => {
-                    swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
-                }
-                SwarmEvent::Behaviour(Event::GossipsubNotSupported(peer)) => {
-                    let _ = swarm.disconnect_peer_id(peer);
-                }
-                SwarmEvent::Behaviour(Event::Request(_peer, _packet)) => {
-                    todo!()
-                    // let peers: Vec<libp2p::PeerId> = swarm.connected_peers().copied().collect();
+            SwarmEvent::Behaviour(Event::GossipsubNotSupported(peer)) => {
+                let _ = self.swarm.disconnect_peer_id(peer);
+            }
+            SwarmEvent::Behaviour(Event::Request(_peer, _packet)) => {
+                todo!()
+                // let peers: Vec<libp2p::PeerId> = swarm.connected_peers().copied().collect();
+                
+                // for other_peer in peers {
+                //     if peer == other_peer { continue }
                     
-                    // for other_peer in peers {
-                    //     if peer == other_peer { continue }
-                        
-                    //     swarm.behaviour_mut().request.send_request(&other_peer, packet.clone());
-                    // }
+                //     swarm.behaviour_mut().request.send_request(&other_peer, packet.clone());
+                // }
 
-                }
-                SwarmEvent::Behaviour(Event::Message(peer_id,data )) => {
-                    let _ = response_sender.send(Response::Client(ClientResponse { peer: peer_id, data })).await;
-                }
-                SwarmEvent::ConnectionClosed { peer_id, cause, .. } => {
-                    println!("Closed: {peer_id} with cause: {cause:?}")
-                }
-                _ => {}
+            }
+            SwarmEvent::Behaviour(Event::Message(peer_id,data )) => {
+                let _ = self.outgoing_events.send(Response::Client(ClientResponse { peer: peer_id, data })).await;
+            }
+            SwarmEvent::ConnectionClosed { peer_id, cause, .. } => {
+                println!("Closed: {peer_id} with cause: {cause:?}")
+            }
+            _ => {
+                println!("Internal: None")
             }
         }
-        
-    });
+    }
 
-    return (handle, request_sender, response_reciever)
+
+    async fn handle_command(&mut self, command: PacketData) {
+        match command {
+            PacketData::Message(msg) => {
+                let _ = self.swarm.behaviour_mut().gossipsub.publish(self.chat.clone(), msg);
+            },
+            PacketData::Movement(_) => todo!(),
+            PacketData::AddPassport(_) => todo!(),
+            PacketData::UpdateAvatar(_avatar) => todo!(),
+        }
+    }
+
+
+    pub async fn run(&mut self) {
+        loop {
+            tokio::select! {
+                event = self.swarm.select_next_some() => {
+                    self.handle_event(event).await
+                }
+                command = self.incoming_commands.recv() => match command {
+                    Some(data) => self.handle_command(data).await,
+                    None => return
+                }
+            }
+        }
+    }
 }
 
 
@@ -147,7 +215,7 @@ pub fn run(key: Keypair, server: bool, addr: libp2p::Multiaddr) -> (tokio::task:
 
 
 
-
+/// Behavior for a hub-spoke evergreen network.
 #[derive(NetworkBehaviour)]
 #[behaviour(to_swarm="Event")]
 pub struct Behaviour {

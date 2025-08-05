@@ -90,13 +90,52 @@ pub struct Vector3 {
 }
 
 
+
+
+#[derive(Debug)]
+pub struct ClientResponse {
+    pub peer: libp2p::PeerId,
+    pub data: PacketData
+}
+
+#[derive(Debug)]
+
+pub struct ServerResponse {
+
+}
+
+#[derive(Debug)]
+
+pub enum NetworkUpdate {
+    AliveWithAddr(String),
+    Disconnected,
+}
+
+
+#[derive(Debug)]
+pub enum Response {
+    Server(ServerResponse),
+    Client(ClientResponse),
+    Network(NetworkUpdate)
+}
+
+
+
+
+
+
+
+
+
+
 #[derive(Debug)]
 pub enum Error {
     None,
     Multiaddr(libp2p::multiaddr::Error),
     Transport(libp2p::TransportError<std::io::Error>),
     Subscroption(libp2p::gossipsub::SubscriptionError),
-    Dial(libp2p::swarm::DialError)
+    Dial(libp2p::swarm::DialError),
+    Publish(libp2p::gossipsub::PublishError)
 }
 
 impl fmt::Display for Error {
@@ -107,6 +146,7 @@ impl fmt::Display for Error {
             Error::Transport(transport_error) => write!(f, "{transport_error}"),
             Error::Subscroption(subscription_error) => write!(f, "{subscription_error}"),
             Error::Dial(dial_error) => write!(f, "{dial_error}"),
+            Error::Publish(publish_error) => write!(f, "{publish_error}")
         }
         
     }
@@ -139,5 +179,11 @@ impl From<libp2p::gossipsub::SubscriptionError> for Error {
 impl From<libp2p::swarm::DialError> for Error {
     fn from(value: libp2p::swarm::DialError) -> Self {
         Self::Dial(value)
+    }
+}
+
+impl From<libp2p::gossipsub::PublishError> for Error {
+    fn from(value: libp2p::gossipsub::PublishError) -> Self {
+        Self::Publish(value)
     }
 }

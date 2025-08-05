@@ -1,11 +1,16 @@
-use std::{error::Error, time::Duration};
+use std::error::Error;
 
 use libp2p::identity::Keypair;
-use evergreen::network::{self, server::NetworkUpdate};
+use evergreen::network;
 use tracing_subscriber::EnvFilter;
 
 
 use evergreen::types::*;
+
+
+
+
+
 
 
 
@@ -16,39 +21,44 @@ async fn main() -> Result<(), Box<dyn Error>>{
     let _ = tracing_subscriber::fmt().with_env_filter(EnvFilter::from_default_env()).try_init();
 
     let keypair = Keypair::generate_ed25519();
+    let addr: libp2p::Multiaddr = "/ip4/127.0.0.1/udp/0/quic-v1".parse()?;
 
-    let (handle, sender, mut reciever) = 
-        network::server::run(keypair.clone(), true, "/ip4/0.0.0.0/udp/0/quic-v1".parse()?);
+    let (mut server, mut server_handle) = 
+        network::server::Network::new_server(keypair, addr).expect("Could not create server");
 
-    let _ = tokio::time::sleep(Duration::from_secs(10));
+    let handle = tokio::task::spawn(async move { server.run().await; });
 
-    let _ = sender.send(PacketData::Message("Hello!".into())).await;
+    println!("Server started");
 
     loop {
+        println!("Loop");
 
         if handle.is_finished() { break }
 
+        tokio::select! {
+            Some(resp) = server_handle.get_event() => match resp {
+                Response::Network(NetworkUpdate::AliveWithAddr(addr)) => {
+                    println!("Alive with addr: {addr}")
+                },
 
-        match reciever.recv().await {
-            Some(resp) => { match resp {
-                network::server::Response::Network(NetworkUpdate::Disconnected) => {
+                Response::Network(NetworkUpdate::Disconnected) => {
+                    println!("Disconnected");
                     break;
                 },
 
-                network::server::Response::Client(resp) => {
+                Response::Client(resp) => {
                     let peer = resp.peer;
                     let data = resp.data;
                     println!("{peer}, {data:?}");
-                }
+                },
 
-                _ => ()
-            }},
-            None => (),
+                _ => (),
+            }
         }
     }
 
 
-    let _ = handle.await;
+    let _ = handle.await?;
 
     Ok(())
 }
