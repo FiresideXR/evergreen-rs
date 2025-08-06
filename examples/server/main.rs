@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 use std::error::Error;
 
 use libp2p::identity::Keypair;

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use futures::StreamExt;
 use libp2p::gossipsub::IdentTopic;
 use libp2p::identity::Keypair;

@@ -2,6 +2,11 @@
 name = "evergreen"
 version = "0.1.0"
 edition = "2024"
+homepage = "https://firesidexr.com/evergreen"
+readme = "README.md"
+description = "Network backend build on libp2p"
+repository = "https://github.com/FiresideXR/evergreen-rs"
+license = "Apache-2.0"
 
 [dependencies]
 chrono = "0.4.41"
