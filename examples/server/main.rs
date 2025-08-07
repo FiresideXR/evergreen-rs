@@ -23,7 +23,7 @@ async fn main() -> Result<(), Box<dyn Error>>{
     let _ = tracing_subscriber::fmt().with_env_filter(EnvFilter::from_default_env()).try_init();
 
     let keypair = Keypair::generate_ed25519();
-    let addr: libp2p::Multiaddr = "/ip4/127.0.0.1/udp/0/quic-v1".parse()?;
+    let addr: libp2p::Multiaddr = "/ip4/0.0.0.0/udp/0/quic-v1".parse()?;
 
     let (mut server, mut server_handle) = 
         network::server::Network::new_server(keypair, addr).expect("Could not create server");

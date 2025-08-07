@@ -1,13 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 use futures::StreamExt;
-use libp2p::gossipsub::IdentTopic;
+use libp2p::gossipsub::{self, IdentTopic};
 use libp2p::identity::Keypair;
-use libp2p::request_response::ProtocolSupport;
-use libp2p::swarm;
-use libp2p::swarm::NetworkBehaviour;
-use libp2p::request_response;
-use libp2p::gossipsub;
-use libp2p::swarm::SwarmEvent;
+use libp2p::request_response::{self, ProtocolSupport};
+use libp2p::swarm::{self, NetworkBehaviour, SwarmEvent};
 use libp2p::Multiaddr;
 use libp2p::StreamProtocol;
 
@@ -134,10 +130,6 @@ impl Network {
         return Ok((server, handle))
     }
 
-
-
-
-
 }
 
 
@@ -166,14 +158,15 @@ impl Network {
                 // }
 
             }
+            
             SwarmEvent::Behaviour(Event::Message(peer_id,data )) => {
                 let _ = self.outgoing_events.send(Response::Client(ClientResponse { peer: peer_id, data })).await;
             }
             SwarmEvent::ConnectionClosed { peer_id, cause, .. } => {
                 println!("Closed: {peer_id} with cause: {cause:?}")
             }
-            _ => {
-                println!("Internal: None")
+            swarm_event => {
+                println!("Internal: {swarm_event:?}")
             }
         }
     }
@@ -181,9 +174,9 @@ impl Network {
 
     async fn handle_command(&mut self, command: Command) {
         match command {
-            Command::SendData(data) => match data {
-                PacketData::Message(msg) => {
-                    let _ = self.swarm.behaviour_mut().gossipsub.publish(self.chat.clone(), msg);
+            Command::SendData(data) => match &data {
+                PacketData::Message(..) => {
+                    let _ = self.swarm.behaviour_mut().gossipsub.publish(self.chat.clone(), data.as_bytes());
                 },
                 PacketData::Movement(_) => todo!(),
                 PacketData::AddPassport(_) => todo!(),
@@ -254,7 +247,7 @@ impl From<gossipsub::Event> for Event {
             gossipsub::Event::Message { propagation_source, message , ..} => {
                 match PacketData::from_bytes(message.data) {
                     Ok(packet) => Self::Message(propagation_source, packet),
-                    Err(_) => Self::Other
+                    Err(_) => {println!("failed to parse message data"); Self::Other}
                 }
             },
             gossipsub::Event::Subscribed { peer_id, topic } => {
@@ -266,7 +259,7 @@ impl From<gossipsub::Event> for Event {
             gossipsub::Event::GossipsubNotSupported { peer_id } => {
                 Self::GossipsubNotSupported(peer_id)
             },
-            _ => Self::Other
+            gossip => Self::Gossip(gossip)
         }
     }
 }
