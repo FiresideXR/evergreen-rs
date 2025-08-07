@@ -12,29 +12,17 @@ use libp2p::Multiaddr;
 use libp2p::StreamProtocol;
 
 
-use crate::types::*;
+use crate::types::{*, error::Error};
+
 
 use tokio::sync::mpsc;
 
 
-// struct ServerConn {
 
-// }
-
-// impl ServerConn {
-//     pub async fn send(req: Request) {
-
-//     }
-
-
-
-
-
-// }
 
 
 pub struct NetworkHandle {
-    outgoing_commands: mpsc::Sender<PacketData>,
+    outgoing_commands: mpsc::Sender<Command>,
     incoming_events: mpsc::Receiver<Response>
 }
 
@@ -44,11 +32,19 @@ impl NetworkHandle {
         self.outgoing_commands.is_closed() || self.incoming_events.is_closed()
     }
 
-    pub fn send_command_blocking(&self, command: PacketData) {
+    pub fn send_data_blocking(&self, data: PacketData) {
+        self.send_command_blocking(Command::SendData(data));
+    }
+
+    pub async fn send_data(&self, data: PacketData) {
+        self.send_command(Command::SendData(data)).await
+    }
+
+    pub fn send_command_blocking(&self, command: Command) {
         let _ = self.outgoing_commands.blocking_send(command);
     }
 
-    pub async fn send_command(&self, command: PacketData) {
+    pub async fn send_command(&self, command: Command) {
         let _ = self.outgoing_commands.send(command).await;
     }
 
@@ -70,7 +66,7 @@ impl NetworkHandle {
 pub struct Network {
     keypair: libp2p::identity::Keypair,
 
-    incoming_commands: mpsc::Receiver<PacketData>,
+    incoming_commands: mpsc::Receiver<Command>,
     outgoing_events: mpsc::Sender<Response>,
 
     chat: IdentTopic,
@@ -92,7 +88,7 @@ impl Network {
 
 
     fn new(key: Keypair, addr: Multiaddr, is_server: bool) -> Result<(Self, NetworkHandle), Error> {
-        let (outgoing_commands, incoming_commands) = mpsc::channel::<PacketData>(64);
+        let (outgoing_commands, incoming_commands) = mpsc::channel::<Command>(64);
         let (outgoing_events, incoming_events) = mpsc::channel(128);
  
         let mut swarm = libp2p::SwarmBuilder::with_existing_identity(key.clone())
@@ -183,14 +179,17 @@ impl Network {
     }
 
 
-    async fn handle_command(&mut self, command: PacketData) {
+    async fn handle_command(&mut self, command: Command) {
         match command {
-            PacketData::Message(msg) => {
-                let _ = self.swarm.behaviour_mut().gossipsub.publish(self.chat.clone(), msg);
-            },
-            PacketData::Movement(_) => todo!(),
-            PacketData::AddPassport(_) => todo!(),
-            PacketData::UpdateAvatar(_avatar) => todo!(),
+            Command::SendData(data) => match data {
+                PacketData::Message(msg) => {
+                    let _ = self.swarm.behaviour_mut().gossipsub.publish(self.chat.clone(), msg);
+                },
+                PacketData::Movement(_) => todo!(),
+                PacketData::AddPassport(_) => todo!(),
+                PacketData::UpdateAvatar(_avatar) => todo!(),
+            }
+            _ => ()
         }
     }
 
