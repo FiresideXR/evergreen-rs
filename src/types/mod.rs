@@ -5,10 +5,39 @@ pub mod auth;
 pub mod error;
 
 
+pub type ItemId = i64;
+pub type Timestamp = i64;
+type PeerString = String;
+pub type ItemType = String;
+
+
+
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ItemState {
+    Locked(PeerString),
+    Unlocked,
+}
+
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Item {
+    created_at: Timestamp,
+    created_by: PeerString,
+    id: ItemId, //hash of timestamp and peerstring
+    item_type: String, //e.g. com.firesidexr.item.stick or com.firesidexr.food.marshmallow
+    //item_state: ItemState,
+}
+
+
+
+
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PacketData {
     Message(String),
-    Movement([Vector3; 12]),
+    Movement([Transform3D; 3]),
+    Puppet(ItemId, Transform3D),
     AddPassport(String),
     UpdateAvatar(Avatar)
 }
@@ -90,7 +119,6 @@ impl ProviderList {
 
     pub fn create_passport(&self, _jwt: String) -> Result<auth::Passport, auth::PassportError> {
 
-
         todo!()
     }
 
@@ -104,6 +132,8 @@ pub struct Peer {
     pub avatar: Avatar,
     pub passports: Vec<auth::Passport>,
 }
+
+pub type Transform3D = [Vector3; 4];
 
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]
@@ -129,9 +159,10 @@ pub struct ServerResponse {
 }
 
 #[derive(Debug)]
-
 pub enum NetworkUpdate {
     AliveWithAddr(String),
+    NewPeer(PeerId),
+    PeerDisconnected(PeerId),
     Disconnected,
 }
 

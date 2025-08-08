@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 use std::str::FromStr;
 
+type Timestamp = i64;
+
+
 pub enum PassportError {
 
 }
@@ -8,12 +11,12 @@ pub enum PassportError {
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct Passport {
-    provider: String,
+    provider: String, //com.firesidexr.auth
     peer_id: String,
     username: String,
     user_id: i64,
     flags: Option<Vec<String>>,
-    expirey: i64,
+    expirey: Timestamp,
 }
 
 impl Passport {

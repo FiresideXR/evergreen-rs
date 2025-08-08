@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 // SPDX-License-Identifier: Apache-2.0
 use futures::StreamExt;
 use libp2p::gossipsub::{self, IdentTopic};
@@ -62,6 +64,8 @@ impl NetworkHandle {
 pub struct Network {
     keypair: libp2p::identity::Keypair,
 
+    peers: HashMap<libp2p::PeerId, Peer>,
+
     incoming_commands: mpsc::Receiver<Command>,
     outgoing_events: mpsc::Sender<Response>,
 
@@ -85,7 +89,7 @@ impl Network {
 
     fn new(key: Keypair, addr: Multiaddr, is_server: bool) -> Result<(Self, NetworkHandle), Error> {
         let (outgoing_commands, incoming_commands) = mpsc::channel::<Command>(64);
-        let (outgoing_events, incoming_events) = mpsc::channel(128);
+        let (outgoing_events, incoming_events) = mpsc::channel(256);
  
         let mut swarm = libp2p::SwarmBuilder::with_existing_identity(key.clone())
         .with_tokio().with_quic()
@@ -118,6 +122,7 @@ impl Network {
             keypair: key,
             incoming_commands,
             outgoing_events,
+            peers: HashMap::new(),
             chat: IdentTopic::new("chat"),
             swarm,
         };
@@ -137,36 +142,30 @@ impl Network {
     async fn handle_event(&mut self, event: swarm::SwarmEvent<Event>) {
         match event {
             SwarmEvent::NewListenAddr { address, .. } => {
-                println!("Internal: Alive with addr");
+                //println!("Internal: Alive with addr");
                 let _ = self.outgoing_events.send(Response::Network(NetworkUpdate::AliveWithAddr(address.to_string()))).await;
-            },
+            }
             SwarmEvent::ConnectionEstablished { peer_id, .. } => {
                 self.swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
-                println!("Internal: Connection established");
+                let _ = self.outgoing_events.send(Response::Network(NetworkUpdate::NewPeer(peer_id))).await;
+                //println!("Internal: Connection established");
             }
             SwarmEvent::Behaviour(Event::GossipsubNotSupported(peer)) => {
                 let _ = self.swarm.disconnect_peer_id(peer);
             }
             SwarmEvent::Behaviour(Event::Request(_peer, _packet)) => {
                 todo!()
-                // let peers: Vec<libp2p::PeerId> = swarm.connected_peers().copied().collect();
-                
-                // for other_peer in peers {
-                //     if peer == other_peer { continue }
-                    
-                //     swarm.behaviour_mut().request.send_request(&other_peer, packet.clone());
-                // }
-
             }
             
             SwarmEvent::Behaviour(Event::Message(peer_id,data )) => {
                 let _ = self.outgoing_events.send(Response::Client(ClientResponse { peer: peer_id, data })).await;
             }
-            SwarmEvent::ConnectionClosed { peer_id, cause, .. } => {
-                println!("Closed: {peer_id} with cause: {cause:?}")
+            SwarmEvent::ConnectionClosed { peer_id, .. } => {
+                let _ = self.outgoing_events.send(Response::Network(NetworkUpdate::PeerDisconnected(peer_id))).await;
+                //println!("Closed: {peer_id} with cause: {cause:?}")
             }
             swarm_event => {
-                println!("Internal: {swarm_event:?}")
+                //println!("Internal: {swarm_event:?}")
             }
         }
     }
@@ -178,9 +177,7 @@ impl Network {
                 PacketData::Message(..) => {
                     let _ = self.swarm.behaviour_mut().gossipsub.publish(self.chat.clone(), data.as_bytes());
                 },
-                PacketData::Movement(_) => todo!(),
-                PacketData::AddPassport(_) => todo!(),
-                PacketData::UpdateAvatar(_avatar) => todo!(),
+                _ => ()
             }
             _ => ()
         }
