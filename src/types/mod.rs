@@ -26,11 +26,11 @@ pub struct Item {
 
 
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub enum PacketData {
     Message(String),
-    Movement([f32; 12]),
-    Puppet(ItemId, [f32; 4]),
+    Movement([[f32; 3]; 12]),
+    Puppet(ItemId, [[f32; 3]; 4]),
     GiveItem(ItemId, PeerString),
     AddPassport(String),
     SetAvatar(Avatar)
