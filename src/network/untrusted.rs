@@ -181,12 +181,6 @@ impl Network {
             _ => ()
         }
     }
-
-    #[tokio::main]
-    pub async fn run_tokio(&mut self) {
-        self.run().await;
-    }
-
     
     pub async fn run(&mut self) {
         loop {
@@ -245,9 +239,10 @@ impl From<request_response::Event<ServerUpdate, ()>> for Event {
 impl From<gossipsub::Event> for Event {
     fn from(value: gossipsub::Event) -> Self {
         match value {
-            gossipsub::Event::Message { propagation_source, message , ..} => {
+            gossipsub::Event::Message {message , ..} => {
+                if message.source.is_none() {return Self::Other}
                 match PacketData::from_bytes(message.data) {
-                    Ok(packet) => Self::Message(propagation_source, packet),
+                    Ok(packet) => Self::Message(message.source.unwrap(), packet),
                     Err(_) => {println!("failed to parse message data"); Self::Other}
                 }
             },
