@@ -14,32 +14,26 @@ pub type ItemType = String;
 
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum ItemState {
-    Locked(PeerString),
-    Unlocked,
-}
-
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Item {
     created_at: Timestamp,
     created_by: PeerString,
+    owner: PeerString,
     id: ItemId, //hash of timestamp and peerstring
     item_type: String, //e.g. com.firesidexr.item.stick or com.firesidexr.food.marshmallow
-    //item_state: ItemState,
 }
 
 
 
 
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum PacketData {
     Message(String),
-    Movement([Transform3D; 3]),
-    Puppet(ItemId, Transform3D),
+    Movement([f32; 12]),
+    Puppet(ItemId, [f32; 4]),
+    GiveItem(ItemId, PeerString),
     AddPassport(String),
-    UpdateAvatar(Avatar)
+    SetAvatar(Avatar)
 }
 
 impl PacketData {
@@ -49,6 +43,8 @@ impl PacketData {
 
     pub fn from_bytes(bytes: impl Into<Vec<u8>>) -> postcard::Result<Self> {
         let bytes: Vec<u8> = bytes.into();
+
+        
 
         postcard::from_bytes(&bytes)
     }
@@ -132,17 +128,6 @@ pub struct Peer {
     pub avatar: Avatar,
     pub passports: Vec<auth::Passport>,
 }
-
-pub type Transform3D = [Vector3; 4];
-
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]
-pub struct Vector3 {
-    pub x: i32,
-    pub y: i32,
-    pub z: i32,
-}
-
 
 
 

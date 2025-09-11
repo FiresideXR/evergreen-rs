@@ -25,7 +25,7 @@ async fn main() -> Result<(), Box<dyn Error>>{
 
     let keypair = Keypair::generate_ed25519();
 
-    let (mut server, mut server_handle) = network::server::Network::new_client(keypair, addr)
+    let (mut server, mut server_handle) = network::untrusted::Network::new_client(keypair, addr)
         .expect("Could not create clients");
 
 
@@ -49,7 +49,6 @@ async fn main() -> Result<(), Box<dyn Error>>{
                     Some(event) => println!("{event:?}"),
                     None => { break; }
                 }
-                
             }
         }
     }

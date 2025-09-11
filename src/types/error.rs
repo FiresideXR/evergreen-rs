@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #[derive(Debug)]
 pub enum Error {
     None,
@@ -11,14 +12,13 @@ pub enum Error {
 impl core::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::None => write!(f, "No Error"),
+            Error::None => write!(f, "Infallible"),
             Error::Multiaddr(error) => write!(f, "{error}"),
             Error::Transport(transport_error) => write!(f, "{transport_error}"),
             Error::Subscroption(subscription_error) => write!(f, "{subscription_error}"),
             Error::Dial(dial_error) => write!(f, "{dial_error}"),
             Error::Publish(publish_error) => write!(f, "{publish_error}")
         }
-        
     }
 }
 

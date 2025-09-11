@@ -86,7 +86,6 @@ impl Network {
     }
 
 
-
     fn new(key: Keypair, addr: Multiaddr, is_server: bool) -> Result<(Self, NetworkHandle), Error> {
         let (outgoing_commands, incoming_commands) = mpsc::channel::<Command>(64);
         let (outgoing_events, incoming_events) = mpsc::channel(256);

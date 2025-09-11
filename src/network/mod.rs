@@ -2,9 +2,9 @@
 
 pub mod p2p;
 
-pub mod server;
+pub mod untrusted;
 
-
+pub mod trusted;
 
 
 

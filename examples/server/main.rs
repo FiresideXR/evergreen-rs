@@ -26,7 +26,7 @@ async fn main() -> Result<(), Box<dyn Error>>{
     let addr: libp2p::Multiaddr = "/ip4/0.0.0.0/udp/0/quic-v1".parse()?;
 
     let (mut server, mut server_handle) = 
-        network::server::Network::new_server(keypair, addr).expect("Could not create server");
+        network::untrusted::Network::new_server(keypair, addr).expect("Could not create server");
 
     let handle = tokio::task::spawn(async move { server.run().await; });
 
