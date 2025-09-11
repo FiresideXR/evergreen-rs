@@ -182,7 +182,12 @@ impl Network {
         }
     }
 
+    #[tokio::main]
+    pub async fn run_tokio(&mut self) {
+        self.run().await;
+    }
 
+    
     pub async fn run(&mut self) {
         loop {
             tokio::select! {
