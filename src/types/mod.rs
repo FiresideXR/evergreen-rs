@@ -91,8 +91,14 @@ impl Identity {
 
 }
 
+
+/// Stores data related to the public profile of a user on the network.
+/// Most of this data can be set freely by a user. Restrictions on this data are applied by other clients.
+/// 
+/// For our purposes, this is a display name, head, torso, backpack, and primary and accent colors.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]
 pub struct Avatar {
+    pub display_name: String,
     pub head: String,
     pub torso: String,
     pub backpack: String,

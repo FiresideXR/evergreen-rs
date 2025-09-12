@@ -1,6 +1,6 @@
 [package]
 name = "firesidexr-evergreen"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2024"
 homepage = "https://firesidexr.com/evergreen"
 readme = "README.md"
