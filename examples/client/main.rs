@@ -9,7 +9,7 @@ use firesidexr_evergreen as evergreen;
 
 use evergreen::network;
 use evergreen::types::*;
-use libp2p::{gossipsub::IdentTopic, identity::Keypair, Multiaddr};
+use libp2p::{identity::Keypair, Multiaddr};
 use tokio::io::AsyncBufReadExt;
 
 
@@ -31,7 +31,7 @@ async fn main() -> Result<(), Box<dyn Error>>{
 
     let handle = tokio::task::spawn(async move {server.run().await; });
 
-    let chat = IdentTopic::new("chat");
+    //let chat = IdentTopic::new("chat");
 
     let mut stdin = tokio::io::BufReader::new(tokio::io::stdin()).lines();
 

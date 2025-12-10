@@ -10,51 +10,12 @@ use libp2p::Multiaddr;
 use libp2p::StreamProtocol;
 
 
+use crate::types::NetworkHandle;
 use crate::types::{*, error::Error};
 
 
+
 use tokio::sync::mpsc;
-
-
-
-
-
-pub struct NetworkHandle {
-    outgoing_commands: mpsc::Sender<Command>,
-    incoming_events: mpsc::Receiver<Response>
-}
-
-impl NetworkHandle {
-
-    pub fn is_closed(&self) -> bool {
-        self.outgoing_commands.is_closed() || self.incoming_events.is_closed()
-    }
-
-    pub fn send_data_blocking(&self, data: PacketData) {
-        self.send_command_blocking(Command::SendData(data));
-    }
-
-    pub async fn send_data(&self, data: PacketData) {
-        self.send_command(Command::SendData(data)).await
-    }
-
-    pub fn send_command_blocking(&self, command: Command) {
-        let _ = self.outgoing_commands.blocking_send(command);
-    }
-
-    pub async fn send_command(&self, command: Command) {
-        let _ = self.outgoing_commands.send(command).await;
-    }
-
-    pub fn get_event_blocking(&mut self) -> Option<Response> {
-        self.incoming_events.try_recv().ok()
-    }
-
-    pub async fn get_event(&mut self) -> Option<Response> {
-        self.incoming_events.recv().await
-    }
-
-}
 
 
 
@@ -87,8 +48,11 @@ impl Network {
 
 
     fn new(key: Keypair, addr: Multiaddr, is_server: bool) -> Result<(Self, NetworkHandle), Error> {
-        let (outgoing_commands, incoming_commands) = mpsc::channel::<Command>(64);
-        let (outgoing_events, incoming_events) = mpsc::channel(256);
+
+        let (net_handle, incoming_commands, outgoing_events) = NetworkHandle::new();
+
+        // let (outgoing_commands, incoming_commands) = mpsc::channel::<Command>(64);
+        // let (outgoing_events, incoming_events) = mpsc::channel(256);
  
         let mut swarm = libp2p::SwarmBuilder::with_existing_identity(key.clone())
         .with_tokio().with_quic()
@@ -126,12 +90,12 @@ impl Network {
             swarm,
         };
 
-        let handle = NetworkHandle{
-            outgoing_commands,
-            incoming_events,
-        };
+        // let handle = NetworkHandle{
+        //     outgoing_commands,
+        //     incoming_events,
+        // };
 
-        return Ok((server, handle))
+        return Ok((server, net_handle))
     }
 
 }
@@ -145,9 +109,9 @@ impl Network {
                 let _ = self.outgoing_events.send(Response::Network(NetworkUpdate::AliveWithAddr(address.to_string()))).await;
             }
             SwarmEvent::ConnectionEstablished { peer_id, .. } => {
+                self.peers.insert(peer_id.clone(), Peer::default());
                 self.swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
                 let _ = self.outgoing_events.send(Response::Network(NetworkUpdate::NewPeer(peer_id))).await;
-                //println!("Internal: Connection established");
             }
             SwarmEvent::Behaviour(Event::GossipsubNotSupported(peer)) => {
                 let _ = self.swarm.disconnect_peer_id(peer);
@@ -157,13 +121,16 @@ impl Network {
             }
             
             SwarmEvent::Behaviour(Event::Message(peer_id,data )) => {
+                if let PacketData::SetAvatar(avatar_data) = &data {
+                    self.peers.get_mut(&peer_id).unwrap_or(&mut Peer::default()).avatar = avatar_data.clone()
+                }
                 let _ = self.outgoing_events.send(Response::Client(ClientResponse { peer: peer_id, data })).await;
             }
             SwarmEvent::ConnectionClosed { peer_id, .. } => {
                 let _ = self.outgoing_events.send(Response::Network(NetworkUpdate::PeerDisconnected(peer_id))).await;
                 //println!("Closed: {peer_id} with cause: {cause:?}")
             }
-            swarm_event => {
+            _swarm_event => {
                 //println!("Internal: {swarm_event:?}")
             }
         }
