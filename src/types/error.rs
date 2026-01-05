@@ -4,9 +4,10 @@ pub enum Error {
     None,
     Multiaddr(libp2p::multiaddr::Error),
     Transport(libp2p::TransportError<std::io::Error>),
-    Subscroption(libp2p::gossipsub::SubscriptionError),
+    //Subscroption(libp2p::gossipsub::SubscriptionError),
     Dial(libp2p::swarm::DialError),
-    Publish(libp2p::gossipsub::PublishError)
+    //Publish(libp2p::gossipsub::PublishError),
+    Signing(libp2p::identity::SigningError),
 }
 
 impl core::fmt::Display for Error {
@@ -15,9 +16,10 @@ impl core::fmt::Display for Error {
             Error::None => write!(f, "Infallible"),
             Error::Multiaddr(error) => write!(f, "{error}"),
             Error::Transport(transport_error) => write!(f, "{transport_error}"),
-            Error::Subscroption(subscription_error) => write!(f, "{subscription_error}"),
+            //Error::Subscroption(subscription_error) => write!(f, "{subscription_error}"),
             Error::Dial(dial_error) => write!(f, "{dial_error}"),
-            Error::Publish(publish_error) => write!(f, "{publish_error}")
+            //Error::Publish(publish_error) => write!(f, "{publish_error}"),
+            Error::Signing(signing_error) => write!{f, "{signing_error}"},
         }
     }
 }
@@ -40,11 +42,11 @@ impl From<libp2p::TransportError<std::io::Error>> for Error {
     }
 }
 
-impl From<libp2p::gossipsub::SubscriptionError> for Error {
-    fn from(value: libp2p::gossipsub::SubscriptionError) -> Self {
-        Self::Subscroption(value)
-    }
-}
+// impl From<libp2p::gossipsub::SubscriptionError> for Error {
+//     fn from(value: libp2p::gossipsub::SubscriptionError) -> Self {
+//         Self::Subscroption(value)
+//     }
+// }
 
 impl From<libp2p::swarm::DialError> for Error {
     fn from(value: libp2p::swarm::DialError) -> Self {
@@ -52,8 +54,15 @@ impl From<libp2p::swarm::DialError> for Error {
     }
 }
 
-impl From<libp2p::gossipsub::PublishError> for Error {
-    fn from(value: libp2p::gossipsub::PublishError) -> Self {
-        Self::Publish(value)
+// impl From<libp2p::gossipsub::PublishError> for Error {
+//     fn from(value: libp2p::gossipsub::PublishError) -> Self {
+//         Self::Publish(value)
+//     }
+// }
+
+
+impl From<libp2p::identity::SigningError> for Error {
+    fn from(value: libp2p::identity::SigningError) -> Self {
+        Self::Signing(value)
     }
 }

@@ -8,9 +8,10 @@ pub enum PassportError {
 
 }
 
-
-#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+/// A Passport is a JWT that 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Passport {
+    jwt: String,
     provider: String, //com.firesidexr.auth
     peer_id: String,
     username: String,
@@ -20,6 +21,27 @@ pub struct Passport {
 }
 
 impl Passport {
+    pub fn new_from_jwt(jwt: impl Into<String>) -> Self {
+
+        let jwt: String = jwt.into();
+
+
+        
+
+
+
+
+
+
+
+        todo!()
+    }
+
+    pub fn to_jwt(&self) -> &str {
+        &self.jwt
+    }
+
+
     pub fn provider(&self) -> &String {
         return &self.provider
     }
@@ -47,4 +69,25 @@ impl Passport {
     pub fn expirey(&self) -> chrono::DateTime<chrono::Utc> {
         return chrono::DateTime::from_timestamp(self.expirey, 0).unwrap()
     }
+}
+
+
+pub struct Provider {
+    pub provider: String, //com.firesidexr.client
+    pub public_keys: Vec<libp2p::identity::PublicKey>,
+    //pub revoked_jwts: Vec<i64>,
+}
+
+pub struct ProviderList {
+    _list: Vec<Provider>
+}
+
+
+impl ProviderList {
+
+    pub fn create_passport(&self, _jwt: String) -> Result<Passport, PassportError> {
+
+        todo!()
+    }
+
 }
