@@ -1,6 +1,24 @@
+// Copyright (c) 2025 Anders Olsen
+//
+// Permission is hereby granted, free of charge, to any person obtaining 
+// a copy of this software and associated documentation files (the "Software"), 
+// to deal in the Software without restriction, including without limitation the 
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is 
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in 
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS 
+// OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN 
+// AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
+// THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 use std::collections::HashMap;
 
-// SPDX-License-Identifier: Apache-2.0
 use futures::StreamExt;
 use libp2p::autonat::InboundProbeEvent;
 //use libp2p::gossipsub::{self, IdentTopic};
@@ -110,13 +128,13 @@ impl Network {
         match event {
             SwarmEvent::NewListenAddr { address, .. } => {
 
-                
                 //println!("Internal: Alive with addr");
                 let _ = self.outgoing_events.send(Response::Network(NetworkUpdate::AliveWithAddr(address.to_string()))).await;
             }
             SwarmEvent::ConnectionEstablished { peer_id, .. } => {
                 self.peers.insert(peer_id.clone(), Peer::default());
                 //self.swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
+                
                 let _ = self.outgoing_events.send(Response::Network(NetworkUpdate::NewPeer(peer_id))).await;
             }
             // SwarmEvent::Behaviour(Event::GossipsubNotSupported(peer)) => {

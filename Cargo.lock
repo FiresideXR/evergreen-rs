@@ -627,6 +627,7 @@ dependencies = [
  "futures",
  "libp2p",
  "postcard",
+ "rand 0.9.2",
  "serde",
  "tokio",
  "tracing-subscriber",
