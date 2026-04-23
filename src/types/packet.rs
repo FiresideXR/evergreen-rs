@@ -116,17 +116,17 @@ pub struct ValidPacket {
 }
 
 impl ValidPacket {
-    pub fn new(packet: RawPacket, key: PublicKey, peer_id: PeerId) -> Option<Self> {
+    pub fn new(packet: &RawPacket, key: &PublicKey, packet_source: PeerId) -> Option<Self> {
 
         let Ok(data) = PacketData::from_bytes(packet.packet_type.clone(), packet.data.clone()) else {return None};
         let sequence_number = packet.sequence_number;
 
-        match packet.signature {
+        match &packet.signature {
 
             // No signature. Skip verification and set the flag to false
             None => Some( Self {
                 data,
-                source: peer_id,
+                source: packet_source,
                 sequence_number,
                 verified: false,
             }),
@@ -141,14 +141,14 @@ impl ValidPacket {
 
                 message.extend_from_slice(&packet.sequence_number.to_be_bytes());
 
-                message.extend(packet.source);
+                message.extend(&packet.source);
 
                 let verified = key.verify(&message, &signature);
 
                 Some(
                     Self {
                         data,
-                        source: peer_id,
+                        source: packet_source,
                         sequence_number,
                         verified,
                     }

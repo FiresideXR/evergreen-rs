@@ -21,7 +21,7 @@ use std::collections::HashMap;
 
 use futures::StreamExt;
 use libp2p::autonat::{InboundFailure, OutboundFailure};
-use libp2p::identity::Keypair;
+use libp2p::identity::{Keypair, PublicKey};
 use libp2p::request_response::{InboundRequestId, OutboundRequestId, ProtocolSupport};
 use libp2p::{request_response::Message, swarm::NetworkBehaviour};
 use libp2p::{PeerId, request_response};
@@ -154,7 +154,7 @@ impl Network {
 
 
         if let PacketData::SetAvatar(avatar_data) = packet.data{
-            self.peers.get_mut(&packet.source).unwrap_or(&mut Peer::default()).avatar = avatar_data.clone()
+            //self.peers.get_mut(&packet.source).unwrap_or(&mut Peer::default()).avatar = avatar_data.clone()
         }
 
         //let _ = self.outgoing_events.send(Response::Client(ClientResponse { peer: peer, data: request.data})).await;
@@ -169,20 +169,27 @@ impl Network {
                 let _ = self.outgoing_events.send(Response::Network(NetworkUpdate::AliveWithAddr(address.to_string()))).await;
             }
             SwarmEvent::ConnectionEstablished { peer_id, .. } => {
-                self.peers.insert(peer_id.clone(), Peer::default());
+                //self.peers.insert(peer_id.clone(), Peer::default());
                 
                 let _ = self.outgoing_events.send(Response::Network(NetworkUpdate::NewPeer(peer_id))).await;
             }
-            SwarmEvent::Behaviour(Event::Message(peer, _connection_id, message)) => {
+            SwarmEvent::Behaviour(Event::Message(_peer, _connection_id, message)) => {
                 
                 match message {
                     Message::Response { .. } => {}, //This doesn't exist. It's a figment of your imagination.
 
                     Message::Request {request, .. } => {
 
-                        match PacketData::try_from(request) {
-                            Ok(packet_data) => self.handle_packet(packet_data).await,
-                            Err(err) => println!("{:?}", err),
+                        let Ok(packet_source) = PeerId::from_bytes(&request.source) else {return};
+
+                        let source_key = match self.peers.get(&packet_source) {
+                            Some(cached_peer) => &cached_peer.public_key,
+                            None => return,
+                        };
+                        
+                        match ValidPacket::new(&request, source_key, packet_source) {
+                            Some(packet) => self.handle_packet(packet).await,
+                            None => println!("Bad packet sent"),
                         }
                     },
                 }

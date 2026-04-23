@@ -78,13 +78,28 @@ pub struct Avatar {
     pub accent_color: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Peer {
-    pub identity: String,
+    pub identity: libp2p::PeerId,
+    pub public_key: libp2p::identity::PublicKey,
     pub avatar: Avatar,
-    pub passports: Vec<String>,
+    pub passports: Vec<auth::Passport>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RawPeerData {
+    public_key: Vec<u8>,
+    avatar: Avatar,
+    passports: Vec<String>,
+}
+
+impl From<&Peer> for RawPeerData {
+    fn from(value: &Peer) -> Self {
+
+
+        todo!()
+    }
+}
 
 
 
