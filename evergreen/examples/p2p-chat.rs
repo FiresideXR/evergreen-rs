@@ -20,14 +20,15 @@
 use std::{io, str::FromStr, thread};
 
 use anyhow::Context;
-use iroh::{Endpoint, EndpointAddr, PublicKey, endpoint::{Connection, RecvStream, SendStream, presets}};
-use tokio::{io::AsyncReadExt, sync::mpsc};
+use iroh::{Endpoint, EndpointAddr, PublicKey, endpoint::{Connection, presets}};
+use tokio::sync::mpsc;
 
 
 const ALPN: &[u8; 8] = b"p2p-chat";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()>{
+    //tracing_subscriber::fmt::init();
 
 
     let endpoint = Endpoint::builder(presets::N0).alpns(vec![ALPN.to_vec()]).bind().await?;
@@ -41,7 +42,6 @@ async fn main() -> anyhow::Result<()>{
 
     let (send_io, mut recv_io) = mpsc::channel::<String>(10);
 
-    
     let _ = thread::spawn(move || -> anyhow::Result<()> {
         let stdin = io::stdin();
 

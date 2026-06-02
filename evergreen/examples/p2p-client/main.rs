@@ -20,7 +20,7 @@
 use std::str::FromStr;
 
 use anyhow::Context;
-use iroh::{Endpoint, EndpointAddr, PublicKey, endpoint::{Connection, presets}};
+use iroh::{Endpoint, EndpointAddr, PublicKey, endpoint::presets};
 
 
 
