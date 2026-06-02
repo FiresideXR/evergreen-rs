@@ -24,7 +24,3 @@ pub mod server;
 pub mod client;
 
 pub mod types;
-
-
-pub use libp2p::identity::Keypair;
-pub use libp2p::PeerId;

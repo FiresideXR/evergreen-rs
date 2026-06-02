@@ -10,3 +10,4 @@ crate-type = ["cdylib"]
 firesidexr-evergreen = {path = "../evergreen"}
 godot = { version = "0.5.1", features = ["api-4-6", "experimental-threads", "register-docs"] }
 libp2p = { version = "0.56.0"}
+tokio = "1.52.3"
