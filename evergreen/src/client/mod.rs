@@ -31,15 +31,10 @@ use crate::types::*;
 use tokio::sync::mpsc;
 
 
-
-
-
-
 #[derive(NetworkBehaviour)]
 #[behaviour(to_swarm="Event")]
 pub struct Behaviour {
     pub request: libp2p::request_response::cbor::Behaviour<RawPacket, ()>
-
 }
 
 #[derive(Debug)]
@@ -49,8 +44,6 @@ pub enum Event {
     OutboundFailure(PeerId, ConnectionId, OutboundRequestId, OutboundFailure),
     InboundFailure(PeerId, ConnectionId, InboundRequestId, InboundFailure),
     ResponseSent(PeerId, ConnectionId, InboundRequestId),
-
-
 }
 
 impl From<request_response::Event<RawPacket, ()>> for Event {

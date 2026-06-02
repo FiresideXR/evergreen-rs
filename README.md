@@ -1,10 +1,8 @@
 # Evergreen
 
-Evergreen is a networking backend developed for use in FiresideXR. It is built using the [libp2p](https://libp2p.io/) networking library.
+Evergreen is a networking backend developed for use in FiresideXR, built on top of the [libp2p](https://libp2p.io/).
 
 ## Security
-
-The primary attacks mitigated against are ones where a peer or untrusted network attempts to impersonate another peer.
 
 If you believe to have discovered a security issue, reach out over email.
 
@@ -28,6 +26,8 @@ The basic kinds of packets are as follows:
 It exists for basic testing and should not be used in production environments.
 
 Packets are converted into typed enums by this library before your client or server recieves them in their run function.
+
+I want to do this with protobufs at some point but I need to get everything working first :P
 
 ## Passports
 
