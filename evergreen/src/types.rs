@@ -17,31 +17,17 @@
 // AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
 // THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-const ALPN : &str = "evergreen/0.1.0";
-use iroh::endpoint::presets;
-use iroh_tickets::Ticket;
+pub type Transform = [i32; 12];
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()>{
-
-    let endpoint = iroh::Endpoint::builder(presets::N0)
-        .alpns(vec![ALPN.into()])
-        //.secret_key(identity)
-        .bind().await?;
-
-    //let evergreen = firesidexr_evergreen::protocol::Evergreen{};
-
-    //let router = iroh::protocol::RouterBuilder::new(endpoint).accept(ALPN.into(), evergreen).spawn();
-
-    //endpoint.connect("", ALPN.into());
-
-    let ticket = iroh_tickets::endpoint::EndpointTicket::from(endpoint.addr());
-
-    println!("{}", ticket);
-    println!("{:?}", ticket.endpoint_addr());
-    println!("{}", ticket.encode_string());
-
-    //endpoint.accept()
-
-    Ok(())
+pub struct AvatarTransform {
+    pub head: Transform,
+    pub right_hand: Transform,
+    pub left_hand: Transform,
 }
+
+pub struct VoipPacket {
+    pub data: Vec<u8>,
+}
+
+
+pub struct Passport;

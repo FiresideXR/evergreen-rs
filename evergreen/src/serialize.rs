@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Anders Olsen
+// Copyright (c) 2025 Anders Olsen
 //
 // Permission is hereby granted, free of charge, to any person obtaining 
 // a copy of this software and associated documentation files (the "Software"), 
@@ -17,31 +17,23 @@
 // AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
 // THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-const ALPN : &str = "evergreen/0.1.0";
-use iroh::endpoint::presets;
-use iroh_tickets::Ticket;
+mod serialization {
+    include!(concat!(env!("OUT_DIR"), "/protobuf_generated/generated.rs"));
+}
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()>{
+use crate::types::*;
 
-    let endpoint = iroh::Endpoint::builder(presets::N0)
-        .alpns(vec![ALPN.into()])
-        //.secret_key(identity)
-        .bind().await?;
+impl From<serialization::AvatarTransform> for AvatarTransform {
+    fn from(value: serialization::AvatarTransform) -> Self {
 
-    //let evergreen = firesidexr_evergreen::protocol::Evergreen{};
+        
 
-    //let router = iroh::protocol::RouterBuilder::new(endpoint).accept(ALPN.into(), evergreen).spawn();
+        todo!()
+    }
+}
 
-    //endpoint.connect("", ALPN.into());
-
-    let ticket = iroh_tickets::endpoint::EndpointTicket::from(endpoint.addr());
-
-    println!("{}", ticket);
-    println!("{:?}", ticket.endpoint_addr());
-    println!("{}", ticket.encode_string());
-
-    //endpoint.accept()
-
-    Ok(())
+impl Into<serialization::AvatarTransform> for AvatarTransform {
+    fn into(self) -> serialization::AvatarTransform {
+        todo!()
+    }
 }

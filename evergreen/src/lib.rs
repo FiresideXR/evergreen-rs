@@ -1,4 +1,4 @@
-// Copyright (c) 2025 Anders Olsen
+// Copyright (c) 2026 Anders Olsen
 //
 // Permission is hereby granted, free of charge, to any person obtaining 
 // a copy of this software and associated documentation files (the "Software"), 
@@ -21,6 +21,14 @@
 
 pub mod server;
 
+//pub mod protocol;
+
 pub mod client;
 
 pub mod types;
+
+pub mod serialize;
+
+pub mod prelude {
+    pub use crate::types::*;
+}

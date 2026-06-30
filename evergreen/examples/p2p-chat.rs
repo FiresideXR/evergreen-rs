@@ -23,20 +23,17 @@ use anyhow::Context;
 use iroh::{Endpoint, EndpointAddr, PublicKey, endpoint::{Connection, presets}};
 use tokio::sync::mpsc;
 
-
 const ALPN: &[u8; 8] = b"p2p-chat";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()>{
     //tracing_subscriber::fmt::init();
 
-
     let endpoint = Endpoint::builder(presets::N0).alpns(vec![ALPN.to_vec()]).bind().await?;
 
     endpoint.online().await;
 
     println!("Online with id: {}", endpoint.id());
-
 
     let connection = init_connection(&endpoint).await?;
 
