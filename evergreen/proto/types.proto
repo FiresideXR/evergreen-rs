@@ -28,25 +28,22 @@ message Passport {
 message InitPacket {
     repeated Passport passports = 1;
     repeated string other_peers = 2;
+    optional bytes data = 3;
+    optional string room_id = 4;
     //AvatarTransform avatar_transform = 3;
     //AvatarChange avatar_change = 4;
 }
 
 
 message DataPacket {
-    uint64 timestamp = 1;
-    bytes data = 2;
-    // optional VoipData voip = 2;
-    // optional AvatarTransform avatar = 3;
-    // optional AvatarChange avatar_change = 4;
-    // repeated PuppetCommand puppet_commands = 5;
-    
+    bytes data = 1;
 }
 
 
 message BasePacket {
+    uint64 timestamp = 1;
     oneof packet {
-        InitPacket init_packet = 1;
+        InitPacket init_packet = 2;
 
         DataPacket data_packet = 3;
     }

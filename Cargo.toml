@@ -1,4 +1,4 @@
 [workspace]
 resolver = "3"
-members = ["evergreen","evergreen-gdext"]
+members = ["evergreen","evergreen-gdext", "evergreen-relay", "evergreen-store"]
 

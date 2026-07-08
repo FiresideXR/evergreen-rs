@@ -25,9 +25,11 @@ pub mod server;
 
 pub mod client;
 
+pub use client::Client;
+
 pub mod types;
 
-pub mod serialize;
+mod wire;
 
 pub mod prelude {
     pub use crate::types::*;
