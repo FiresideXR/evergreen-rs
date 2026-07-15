@@ -25,13 +25,28 @@ message Passport {
 }
 
 
+enum PeerState {
+    // Do not send or receive data for this peer
+    Waiting = 0;
+    // Able to send and receive data
+    Ready = 1;
+}
+
 message InitPacket {
+    // "who/what" I am
     repeated Passport passports = 1;
-    repeated string other_peers = 2;
-    optional bytes data = 3;
-    optional string room_id = 4;
-    //AvatarTransform avatar_transform = 3;
-    //AvatarChange avatar_change = 4;
+    // Where I think I am (if using rooms)
+    optional string room_id = 2;
+    // Who I'm with (may be empty)
+    repeated string other_peers = 3;
+    // // How ready I am for data
+    // PeerState state = 4;
+    // Other optional connection data (per implementer of evergreen)
+    optional bytes data = 5;
+}
+
+message UpdatePacket {
+    optional string room_id = 1;
 }
 
 
@@ -44,8 +59,11 @@ message BasePacket {
     uint64 timestamp = 1;
     oneof packet {
         InitPacket init_packet = 2;
+        
+        UpdatePacket update_packet = 3;
 
-        DataPacket data_packet = 3;
+        DataPacket data_packet = 4;
+
     }
 }
 

@@ -21,7 +21,7 @@
 
 pub mod server;
 
-//pub mod protocol;
+pub mod protocol;
 
 pub mod client;
 
@@ -29,7 +29,9 @@ pub use client::Client;
 
 pub mod types;
 
-mod wire;
+pub mod wire;
+
+mod internal;
 
 pub mod prelude {
     pub use crate::types::*;

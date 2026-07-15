@@ -31,3 +31,15 @@ pub struct VoipPacket {
 
 
 pub struct Passport;
+
+
+pub struct PeerInfo {
+    passports: Vec<crate::types::Passport>,
+    room_id: u64,
+}
+
+impl PeerInfo {
+    pub fn new() {
+
+    }
+}

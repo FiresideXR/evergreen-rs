@@ -24,13 +24,14 @@ mod serialization {
 use protobuf::Parse;
 
 
+
 pub struct InitialPayload {
-    passports: Vec<String>,
-    other_peers: Vec<String>,
+    pub passports: Vec<String>,
+    pub other_peers: Vec<String>,
 
     // Technically these can be "none" by being empty but we want to be explicit with how we model our data
-    room_id: Option<String>,
-    data: Option<Vec<u8>>,
+    pub room_id: Option<String>,
+    pub data: Option<Vec<u8>>,
 }
 
 pub enum Packet {
@@ -45,13 +46,14 @@ use serialization::base_packet::PacketOneof;
 /// Internal function
 /// 
 /// Used to deserialize packets :P
-pub fn deserialize_packet(packet: &[u8]) -> Result<Packet, protobuf::ParseError> {
+pub(crate) fn deserialize_packet(packet: &[u8]) -> Result<Packet, protobuf::ParseError> {
     let base = serialization::BasePacket::parse(packet.into())?;
 
     match base.packet() {
         // At the moment we're just reusing the protobuf error as a generic parse error. 
         // Should the parsing get stricter we should implement a custom error for this case.
         PacketOneof::not_set(_) => Err(protobuf::ParseError),
+        PacketOneof::UpdatePacket(_) => todo!(),
         PacketOneof::DataPacket(data_packet) => Ok(Packet::Data(data_packet.data().to_vec())),
         PacketOneof::InitPacket(init_packet) => {
             Ok(Packet::Init(InitialPayload 

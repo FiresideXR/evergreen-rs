@@ -18,14 +18,19 @@
 // THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+use std::collections::HashMap;
+
+use futures::FutureExt;
 use iroh::{Endpoint, SecretKey, endpoint::{self, Connection, RecvStream, presets}};
+use crate::internal::TaskWrapper;
 
 const ALPN: &str = "evergreen/0.1.0";
 
 pub enum ClientUpdate {
-    /// Denotes when a 
+    /// Different from [ClientUpdate::NewPeer]. Emitted when a peer *attempts* to connect to this client
+    IncomingPeer(iroh::EndpointId),
+    /// Emitted when a peer has completed a full handshake and connected to this peer
     NewPeer(iroh::EndpointId),
-
 }
 
 /// A function that is called for updates on the client. 
@@ -58,22 +63,22 @@ impl Client {
             .bind().await?;
 
         // Communication is key in any good relationship
-        let (request_sender, request_reciever) = mpsc::channel::<Request>(128);
-        let (response_sender, response_reciever) = mpsc::channel::<ClientUpdate>(128);
+        let (request_sender, request_receiver) = mpsc::channel::<Request>(128);
+        let (response_sender, response_receiver) = mpsc::channel::<ClientUpdate>(128);
 
         // Safeword
         let token = tokio_util::sync::CancellationToken::new();
 
         // Riiise, RIIIIIIIIIIISE. GO MY MINIONS. LET TERROR REIGN.
         let task_handle = tokio::task::spawn(
-            event_loop(endpoint.clone(), token.clone(), request_reciever, response_sender, callback)
+            event_loop(endpoint.clone(), token.clone(), request_receiver, response_sender, callback)
         );
 
         let wrapper = TaskWrapper{
             cancel_token: token,
             task_handle, 
-            incoming_queue: response_reciever, 
-            outoging_queue: request_sender
+            incoming_queue: response_receiver, 
+            outgoing_queue: request_sender
         };
 
         // Make sure we're actually online
@@ -154,6 +159,9 @@ impl Client {
     /// 
     pub async fn connect_to_room(&self) -> Result<(), ()> {
 
+
+        
+
         todo!()
     }
 
@@ -165,26 +173,26 @@ impl Client {
 // }
 
 
-// struct PeerInfo {
-//     state: 
-// }
 
+mod connection_loop;
 
 async fn event_loop(
     endpoint: Endpoint,
     cancel_token: tokio_util::sync::CancellationToken, 
-    mut incoming: mpsc::Receiver<Request>, 
-    outgoing: mpsc::Sender<ClientUpdate>,
+    mut incoming_requests: mpsc::Receiver<Request>, 
+    outgoing_updates: mpsc::Sender<ClientUpdate>,
     _callback: Option<UpdateCallback>,
 ){
-    // Probably overkill but ¯\_(ツ)_/¯
-    let mut read_buffer: Vec<u8> = Vec::with_capacity(1028);
+    // // Probably overkill but ¯\_(ツ)_/¯
+    // let mut read_buffer: Vec<u8> = Vec::with_capacity(1028);
     
     let mut room_id: Option<u64> = None;
     
-    let mut connections: ConnectionList = ConnectionList { list: vec![] };
+    let mut connections = ConnectionList { list: vec![] };
 
-    //let mut peer_info: HashMap<iroh::EndpointId, PeerInfo> = HashMap::new();
+    let mut incoming_connections = connection_loop::IncomingList { list: vec![]};
+
+    let mut peer_info: HashMap<iroh::EndpointId, PeerInfo> = HashMap::with_capacity(128);
 
     loop {
         tokio::select! {
@@ -193,7 +201,8 @@ async fn event_loop(
 
                 return;
             },
-            new_command = incoming.recv() => { 
+            // Requests *to* the client. Usually to 
+            new_command = incoming_requests.recv() => { 
                 let Some(command) = new_command else {break};
 
                 match command {
@@ -210,10 +219,21 @@ async fn event_loop(
                     None => cancel_token.cancel(),
                     // Someone is calling us :O
                     Some(incoming) => {
-                        incoming;
+                        let handle = tokio::task::spawn(handle_incoming(endpoint.clone(), incoming));
+                        incoming_connections.list.push(handle);
                     },
                 }
             },
+            (incoming_index, status) = &mut incoming_connections => {
+                incoming_connections.list.remove(incoming_index);
+                
+                match status {
+                    Err(error) => todo!(),
+                    Ok(_) => {
+
+                    },
+                }
+            }
             (connection_index, stream_event) = &mut connections => {
                 match stream_event {
                     Err(_error) => { 
@@ -221,7 +241,7 @@ async fn event_loop(
                         connections.list.remove(connection_index);
                     }
                     Ok(stream) => {
-                        let _ = tokio::task::spawn(handle_packet(endpoint.clone(), stream, outgoing.clone()));
+                        let _ = tokio::task::spawn(handle_packet(endpoint.clone(), stream, outgoing_updates.clone()));
                     },
                 }
             }
@@ -236,29 +256,18 @@ async fn handle_packet(endpoint: Endpoint, mut stream: RecvStream, outoging: mps
 
     let Ok(packet) = crate::wire::deserialize_packet(&raw_packet) else {return ;};
 
-    match packet {
-        crate::wire::Packet::Init(initial_payload) => todo!(),
-        crate::wire::Packet::Data(items) => todo!(),
-    }
+    todo!()
 }
-
-
-async fn new_connection(endpoint: Endpoint, incoming: mpsc::Sender<Request>) {
-
-}
-
-
 
 struct ConnectionList {
     list: Vec<Connection>,
 }
 
-use std::{collections::HashMap, task::Poll};
 
 impl Future for ConnectionList {
     type Output = (usize, Result<endpoint::RecvStream, endpoint::ConnectionError>);
 
-    fn poll(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<Self::Output> {
+    fn poll(self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> Poll<Self::Output> {
         
         for (index, connection) in self.list.iter().enumerate() {
             let future = connection.accept_uni();
@@ -270,40 +279,6 @@ impl Future for ConnectionList {
         }
         
         Poll::Pending
-    }
-}
-
-/// Wraps a [tokio::task] and pair of [mpsc::Sender] and [mpsc::Receiver]
-/// 
-/// For internal use only :P
-struct TaskWrapper<A, B, C> {
-    cancel_token: CancellationToken,
-    task_handle: tokio::task::JoinHandle<A>,
-    incoming_queue: tokio::sync::mpsc::Receiver<B>,
-    outoging_queue: tokio::sync::mpsc::Sender<C>,
-}
-
-impl <A, B, C> TaskWrapper<A, B, C> {
-
-    #[inline(always)]
-    fn is_done(&self) -> bool {
-        self.task_handle.is_finished() || self.incoming_queue.is_closed() || self.outoging_queue.is_closed()
-    }
-
-    /// Errors if the reciever has been dropped or the channel has been closed
-    #[inline(always)]
-    async fn send(&self, value: C) -> Result<(), tokio::sync::mpsc::error::SendError<C>> {
-        self.outoging_queue.send(value).await
-    }
-
-    #[inline(always)]
-    async fn recv(&mut self) -> Option<B> {
-        self.incoming_queue.recv().await
-    }
-
-    #[inline(always)]
-    fn cancel(&self) {
-        self.cancel_token.cancel();
     }
 }
 
