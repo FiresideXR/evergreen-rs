@@ -1,6 +1,6 @@
 [package]
 name = "evergreen"
-version = "0.2.0"
+version = "0.2.0-alpha"
 edition = "2024"
 homepage = "https://firesidexr.com/evergreen"
 readme = "../README.md"
@@ -9,6 +9,7 @@ repository = "https://github.com/FiresideXR/evergreen-rs"
 license = "Apache-2.0"
 keywords = ["gamedev", "networking", "iroh", "firesidexr", "evergreen"]
 categories = ["network-programming", "game-development"]
+include = ["../README.md"]
 
 [dependencies]
 chrono = "0.4.41"
