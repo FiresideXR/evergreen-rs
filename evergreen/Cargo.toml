@@ -1,5 +1,5 @@
 [package]
-name = "firesidexr-evergreen"
+name = "evergreen"
 version = "0.2.0"
 edition = "2024"
 homepage = "https://firesidexr.com/evergreen"

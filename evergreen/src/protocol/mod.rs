@@ -103,6 +103,13 @@ pub fn new(endpoint: iroh::Endpoint) -> (Evergreen, EvergreenHandler) {
 
 
 impl Evergreen {
+
+    pub async fn join_room() {
+        todo!()
+    }
+
+
+
     pub async fn recv(&mut self) -> Option<()> {
         self.connection_updates.recv().await
     }
