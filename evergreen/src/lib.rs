@@ -23,7 +23,7 @@ pub mod server;
 
 pub mod protocol;
 
-pub mod client;
+mod client;
 
 pub use client::Client;
 
@@ -35,4 +35,5 @@ mod internal;
 
 pub mod prelude {
     pub use crate::types::*;
+    pub use crate::Client;
 }

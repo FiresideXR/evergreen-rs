@@ -1,9 +1,6 @@
 
-use iroh::{Endpoint, protocol::{RouterBuilder, Router}, SecretKey};
+use iroh::{Endpoint, protocol::{RouterBuilder, Router}};
 use crate::protocol::{Evergreen, ALPN};
-
-
-
 
 
 
@@ -14,6 +11,7 @@ pub struct Client {
     router: Router,
 }
 
+use crate::types::Identity;
 
 impl Client {
 
@@ -30,7 +28,11 @@ impl Client {
     /// 
     /// This function takes an optional callback for updates about the client. 
     /// See [UpdateCallback] for more information.
-    pub async fn new(identity: SecretKey) -> Result<Self, iroh::endpoint::BindError> {
+    /// 
+    /// As you can see this abstracts over much of the inner workings of Evergreen and how it interfaces with other libraries like [iroh].
+    /// Functions and types are provided via [protocol][crate::protocol], [wire][crate::wire], and [types][crate::types] 
+    /// that provide more granular control over your network connections and data.
+    pub async fn new(identity: Identity) -> Result<Self, iroh::endpoint::BindError> {
 
         let endpoint = Endpoint::builder(iroh::endpoint::presets::N0)
             .alpns(vec![ALPN.into()])

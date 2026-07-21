@@ -17,18 +17,8 @@
 // AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
 // THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-pub type Transform = [i32; 12];
 
-pub struct AvatarTransform {
-    pub head: Transform,
-    pub right_hand: Transform,
-    pub left_hand: Transform,
-}
-
-pub struct VoipPacket {
-    pub data: Vec<u8>,
-}
-
+pub use iroh::SecretKey as Identity;
 
 pub struct Passport;
 

@@ -17,31 +17,20 @@
 // AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
 // THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-const ALPN : &str = "evergreen/0.1.0";
-use iroh::endpoint::presets;
-use iroh_tickets::Ticket;
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()>{
 
-    let endpoint = iroh::Endpoint::builder(presets::N0)
-        .alpns(vec![ALPN.into()])
-        //.secret_key(identity)
-        .bind().await?;
+    let identity = evergreen::types::Identity::generate();
 
-    //let evergreen = firesidexr_evergreen::protocol::Evergreen{};
 
-    //let router = iroh::protocol::RouterBuilder::new(endpoint).accept(ALPN.into(), evergreen).spawn();
+    
 
-    //endpoint.connect("", ALPN.into());
 
-    let ticket = iroh_tickets::endpoint::EndpointTicket::from(endpoint.addr());
 
-    println!("{}", ticket);
-    println!("{:?}", ticket.endpoint_addr());
-    println!("{}", ticket.encode_string());
+    let client = evergreen::Client::new(identity).await?;
 
-    //endpoint.accept()
+
+    client.stop_client().await;
 
     Ok(())
 }

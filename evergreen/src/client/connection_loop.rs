@@ -1,5 +1,5 @@
 
-use iroh::{endpoint, Endpoint};
+use iroh::endpoint::{self, Connection};
 use crate::types::*;
 use tokio::sync::{broadcast, mpsc};
 
@@ -25,7 +25,7 @@ pub enum ConnectionUpdates {
 
 
 pub struct ConnectionHandle {
-    pub broadcast: broadcast::Sender<Orders>,
+    pub broadcast: broadcast::Sender<Order>,
     pub sender: mpsc::Sender<ConnectionUpdates>,
     pub receiver: mpsc::Receiver<ConnectionUpdates>,
 }
@@ -35,7 +35,7 @@ impl ConnectionHandle {
 }
 
 pub struct ClientHandle {
-    receiver: broadcast::Receiver<Orders>,
+    receiver: broadcast::Receiver<Order>,
     sender: mpsc::Sender<ConnectionUpdates>
 }
 
@@ -66,14 +66,14 @@ pub async fn handle_connection(incoming: endpoint::Incoming, handle: ClientHandl
 
 
 pub struct IncomingList {
-    pub list: Vec<tokio::task::JoinHandle<Result<(Connection, PeerInfo), IncomingError>>>,
+    pub list: Vec<tokio::task::JoinHandle<Result<(iroh::endpoint::Connection, PeerInfo), IncomingError>>>,
 }
 
 
 
 
 #[derive(thiserror::Error, Debug)]
-enum IncomingError {
+pub enum IncomingError {
     #[error("Task join error")]
     JoinError(#[from] tokio::task::JoinError),
 
@@ -99,7 +99,7 @@ const INIT_PACKET_LIMIT: usize = 1024;
 
 use crate::wire::Packet;
 
-async fn handle_incoming(incoming: iroh::endpoint::Incoming) -> Result<(endpoint::Connection, PeerInfo), IncomingError> {
+async fn handle_incoming(incoming: iroh::endpoint::Incoming) -> Result<(Connection, PeerInfo), IncomingError> {
 
     let connection = incoming.await?;
 
