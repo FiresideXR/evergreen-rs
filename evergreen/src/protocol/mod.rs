@@ -32,14 +32,16 @@ pub struct Evergreen
 
     // We don't actually use this as a handler internally. 
     // Inside of this struct we use it to reference and update data used by the actual handler (inside the router) 
-    room_id: watch::Sender<u64>,
+    room_id: watch::Sender<Option<u64>>,
     broadcast: broadcast::Sender<()>,
     blocklist: Arc<RwLock<Vec<iroh::EndpointId>>>,
+
+    
 }
 
 
 pub fn new(endpoint: iroh::Endpoint) -> (Evergreen, EvergreenHandler) {
-    let room_id = watch::Sender::new(0);
+    let room_id = watch::Sender::new(None);
         // gives us around a minute of packets to build up in memory. Probably too much but eh, I'll tank the higher memory usage.
         let broadcast = broadcast::Sender::<()>::new(1028);
         let (update_sender, connection_updates) = mpsc::channel::<()>(1028);
@@ -47,6 +49,8 @@ pub fn new(endpoint: iroh::Endpoint) -> (Evergreen, EvergreenHandler) {
         let blocklist = Arc::new(RwLock::new(Vec::with_capacity(128)));
 
         let filter = Arc::new(filter::default_filter);
+
+        
 
         let evergreen = Evergreen {
             connection_updates,

@@ -20,7 +20,14 @@
 
 pub use iroh::SecretKey as Identity;
 
+#[derive(Clone, Debug)]
 pub struct Passport;
+
+impl Passport {
+    pub fn to_string(&self) -> String {
+        todo!()
+    }
+}
 
 
 pub struct PeerInfo {

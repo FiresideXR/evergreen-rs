@@ -33,14 +33,13 @@ enum PeerState {
 }
 
 message InitPacket {
+    string ticket = 1;
     // "who/what" I am
-    repeated Passport passports = 1;
+    repeated Passport passports = 2;
     // Where I think I am (if using rooms)
-    optional string room_id = 2;
+    optional uint64 room_id = 3;
     // Who I'm with (may be empty)
-    repeated string other_peers = 3;
-    // // How ready I am for data
-    // PeerState state = 4;
+    repeated string other_peers = 4;
     // Other optional connection data (per implementer of evergreen)
     optional bytes data = 5;
 }
