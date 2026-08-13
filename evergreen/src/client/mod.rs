@@ -1,14 +1,37 @@
 
 use iroh::{Endpoint, protocol::{RouterBuilder, Router}};
-use crate::protocol::{Evergreen, ALPN};
+
+use tokio::sync::{broadcast, mpsc};
+use tokio_util::sync::CancellationToken;
+
+use std::{collections::HashMap, sync::Arc};
+mod sync;
+
+const ALPN: &'static str =  "evergreen/0.1.0";
 
 
 
-
+pub enum RoomTransition {
+    /// Disconnect from the current room, then connect to the next room. (Most standard model)
+    LoadingScreen,
+    /// Wait to disconnect from previous room until fully connected to the next room. Transition to next room can then be instant.
+    Instant,
+    /// Connect to multiple rooms at the same time. Broadcast your packets to all rooms at once. 
+    Simultaneous,
+}
 
 pub struct Client {
-    evergreen: Evergreen,
-    router: Router,
+    
+    token: CancellationToken,
+
+    task: tokio::task::JoinHandle<()>,
+
+    //shared_state: Arc<sync::ClientSharedState>,
+
+    send_commands: broadcast::Sender<()>,
+
+    recv_updates: mpsc::Receiver<()>,
+
 }
 
 use crate::types::Identity;
@@ -17,45 +40,41 @@ impl Client {
 
     /// Creates a [Client]. This starts a few things in motion at once.
     /// 
-    /// 1. Creates an [Iroh][iroh] endpoint. This kickstarts discoverability via DNS and begins connections to relays
     /// 
-    /// 2. Creates a [Evergreen Protocol Instance][Evergreen]
-    /// 
-    /// Once this functions returns, the endpoint is "online" and has connected to a relay.
-    /// 
-    /// This function waits for [Endpoint::online()] to return. 
-    /// Please refer to Iroh documentation regarding setting timeouts, as this function has none implemented by default.
-    /// 
-    /// This function takes an optional callback for updates about the client. 
-    /// See [UpdateCallback] for more information.
-    /// 
-    /// As you can see this abstracts over much of the inner workings of Evergreen and how it interfaces with other libraries like [iroh].
-    /// Functions and types are provided via [protocol][crate::protocol], [wire][crate::wire], and [types][crate::types] 
-    /// that provide more granular control over your network connections and data.
-    pub async fn new(identity: Identity) -> Result<Self, iroh::endpoint::BindError> {
+    pub async fn new(identity: Identity, transition: RoomTransition) -> Result<Self, iroh::endpoint::BindError> {
 
         let endpoint = Endpoint::builder(iroh::endpoint::presets::N0)
             .alpns(vec![ALPN.into()])
             .secret_key(identity)
             .bind().await?;
 
-        let (evergreen, handler) = crate::protocol::new(endpoint.clone());
-
-        let router = RouterBuilder::new(endpoint.clone())
-            .accept(crate::protocol::ALPN, handler)
-            .spawn();
-
         // Make sure we're actually online
         endpoint.online().await;
 
+        let token = CancellationToken::new();
+        
+
         Ok(Client{
-            evergreen,
-            router,
+
         })
     }
-
     /// This functions takes ownership of a [Client] and then kills it. 
     pub async fn stop_client(self) {
-        let _ = self.router.shutdown().await;
+        let _ = self
     }
+}
+
+
+
+fn client_loop(token: CancellationToken) {
+
+    let rooms: sync::RoomList = Arc::new(tokio::sync::RwLock::new(HashMap::with_capacity(8)));
+
+    let connections: Vec<tokio::task::JoinHandle<()>> = Vec::with_capacity(32);
+
+    let client_state: sync::ClientSharedState;
+
+
+
+
 }

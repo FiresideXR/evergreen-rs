@@ -5,5 +5,5 @@ fn main() {
     .include("proto")
     .input("types.proto")
     .generate_and_compile()
-    .unwrap()
+    .unwrap();
 }

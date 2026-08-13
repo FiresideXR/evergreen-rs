@@ -19,10 +19,6 @@
 
 #![doc = include_str!("../README.md")]
 
-pub mod server;
-
-pub mod protocol;
-
 mod client;
 
 pub use client::Client;
@@ -30,8 +26,6 @@ pub use client::Client;
 pub mod types;
 
 pub mod wire;
-
-mod internal;
 
 pub mod prelude {
     pub use crate::types::*;

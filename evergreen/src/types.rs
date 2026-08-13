@@ -32,7 +32,7 @@ impl Passport {
 
 pub struct PeerInfo {
     passports: Vec<crate::types::Passport>,
-    room_id: u64,
+    room_id: Option<u64>,
 }
 
 impl PeerInfo {
