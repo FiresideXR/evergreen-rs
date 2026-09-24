@@ -6,7 +6,7 @@ use tokio_util::sync::CancellationToken;
 use std::collections::HashMap;
 
 
-
+#[derive(Debug, Clone, Copy)]
 pub struct RoomID {
     id: [u8; 32],
 }
@@ -21,16 +21,26 @@ impl From<u8> for RoomID {
 }
 
 // This could eventually be a Weak instead of Arc. Would require some unsafe code + more checks. 
-// Perf gain would also probably be negligible. This data isn't being allocated and deallocated frequently.
+// Perf gain would also probably be negligible. This Arc isn't being cloned and dropped *that* often.
 pub type SharedState = Arc<ClientState>;
 
-pub enum Events {
-
+#[derive(Debug, Clone)]
+pub enum NetworkEvent {
+    // There are better ways to do this. I'd love to figure out some sort of shared arena. For now it's #goodenough
+    /// Broadcast the data to all peers in shared rooms.
+    SendData(Arc<[u8]>), 
+    ChangeRooms(RoomID),
 }
 
 pub enum InternalEvents {
     GatherPeers(RoomID, mpsc::Sender<String>),
 }
+
+pub struct Update {
+    pub sender: iroh::EndpointId,
+    pub event: NetworkEvent,
+}
+
 
 /// State shared by every connection task
 pub struct ClientState {
@@ -48,6 +58,8 @@ pub struct ClientState {
     /// Packets to be broadcast across the network
     pub recv_packets: broadcast::Sender<Vec<u8>>,
 
+    pub send_updates: mpsc::Sender<()>,
+
     /// Rooms this peer is _active_ in.
     /// 
     /// Active means that this client is ready to send and receive data within that room.
@@ -58,16 +70,19 @@ pub struct ClientState {
 
 
     /// 
-    pub peers: RwLock<HashMap<RoomID, Vec<String>>>
+    pub peers: RwLock<HashMap<RoomID, Vec<String>>>,
+
+    
 
 }
 
 impl ClientState {
-    pub fn new(passports: Vec<crate::types::Passport>, blocklist: Vec<iroh::EndpointId>) -> ClientState {
+    pub fn new(passports: Vec<crate::types::Passport>, blocklist: Vec<iroh::EndpointId>, send_updates: mpsc::Sender<()>) -> ClientState {
         Self {
             passports: RwLock::new(passports),
             blocklist: RwLock::new(blocklist),
             recv_packets: broadcast::Sender::new(1024),
+            send_updates,
             rooms: watch::Sender::new(Vec::with_capacity(8)),
             peers: RwLock::new(HashMap::with_capacity(8)),
         }
@@ -75,13 +90,18 @@ impl ClientState {
 
 }
 
+/// Helper method for spawning [connection_loop] in a task
+pub async fn spawn_connection_loop(incoming: iroh::endpoint::Incoming, state: SharedState) -> tokio::task::JoinHandle<()> {
+    tokio::spawn(async {connection_loop(incoming, state)}.await)
+}
 
 
-pub async fn connection_loop(state: SharedState, event_sender: mpsc::Sender<Events>) {
-
-    
+pub async fn connection_loop(incoming: iroh::endpoint::Incoming, state: SharedState) {
 
 
+
+
+    todo!()
 
 
 }

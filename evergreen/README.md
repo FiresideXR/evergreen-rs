@@ -4,6 +4,7 @@ Evergreen is a networking backend developed for use in FiresideXR, built on top 
 
 > ![WARNING]
 > Evergreen is in early development and subject to sudden breaking changes. 
+> Everything is broken and nothing works properly. 
 
 ### Security
 
