@@ -31,7 +31,7 @@ impl Passport {
 
 
 pub struct PeerInfo {
-    passports: Vec<crate::types::Passport>,
+    passports: Vec<Passport>,
     room_id: Option<u64>,
 }
 
@@ -39,4 +39,11 @@ impl PeerInfo {
     pub fn new() {
 
     }
+}
+
+/// Representation of a peer sharing the room with us
+pub struct Peer {
+    identity: Identity,
+    name: String,
+    passports: Vec<Passport>,
 }

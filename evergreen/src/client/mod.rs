@@ -6,19 +6,13 @@ use tokio_util::sync::CancellationToken;
 
 use std::{collections::HashMap, sync::Arc};
 mod sync;
+pub mod config;
 
 const ALPN: &'static str =  "evergreen/0.1.0";
 
 
 
-pub enum RoomTransition {
-    /// Disconnect from the current room, then connect to the next room. (Most standard model)
-    LoadingScreen,
-    /// Wait to disconnect from previous room until fully connected to the next room. Transition to next room can then be instant.
-    Instant,
-    /// Connect to multiple rooms at the same time. Broadcast your packets to all rooms at once. 
-    Simultaneous,
-}
+
 
 pub struct Client {
     
@@ -41,11 +35,11 @@ impl Client {
     /// Creates a [Client]. This starts a few things in motion at once.
     /// 
     /// 
-    pub async fn new(identity: Identity, transition: RoomTransition) -> Result<Self, iroh::endpoint::BindError> {
+    pub async fn new(config: config::ClientConfig) -> Result<Self, iroh::endpoint::BindError> {
 
         let endpoint = Endpoint::builder(iroh::endpoint::presets::N0)
             .alpns(vec![ALPN.into()])
-            .secret_key(identity)
+            .secret_key(config.identity)
             .bind().await?;
 
         // Make sure we're actually online

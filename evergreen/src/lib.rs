@@ -21,13 +21,16 @@
 
 mod client;
 
-pub use client::Client;
-
 pub mod types;
 
 pub mod wire;
 
+mod network;
+
+mod rooms;
+
 pub mod prelude {
     pub use crate::types::*;
-    pub use crate::Client;
+    pub use crate::client::Client;
+    pub use crate::client::config;
 }
