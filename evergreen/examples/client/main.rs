@@ -33,7 +33,7 @@ const APP_ID: &str = "com.dungenrobot.chatroom";
 async fn quickstart() -> (Client, Identity) {
     let identity = Identity::generate();
     let client_config = ClientConfig::new(identity.clone(), RoomTransition::Load);
-    let client = Client::create_and_start(client_config).await?;
+    let client = Client::create_and_start(client_config).await.unwrap();
 
     let server_list = SERVER_LIST;
     

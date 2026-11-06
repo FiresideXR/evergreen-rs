@@ -816,7 +816,7 @@ dependencies = [
 
 [[package]]
 name = "evergreen"
-version = "0.2.0-alpha"
+version = "0.2.0-alpha1"
 dependencies = [
  "anyhow",
  "chrono",
