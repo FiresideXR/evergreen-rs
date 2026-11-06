@@ -1,9 +1,9 @@
 # Evergreen
 
-Evergreen is a networking backend developed for use in FiresideXR, built on top of the [iroh][https://iroh.computer/].
+Evergreen is a networking backend developed for use in FiresideXR, built on top of the [iroh](https://iroh.computer/).
 
-> ![WARNING]
-> Everything is broken and nothing works properly. 
+
+<div class="warning">Everything is broken and nothing works properly. </div>
 <!-- > Evergreen is in early development and subject to sudden breaking changes.  -->
 
 
