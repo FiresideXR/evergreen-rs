@@ -28,14 +28,12 @@ pub struct Client {
 
 }
 
-use crate::types::Identity;
-
 impl Client {
 
-    /// Creates a [Client]. This starts a few things in motion at once.
+    /// Creates a [`Client`] from a [`ClientConfig`](config::ClientConfig) and begins running it. 
     /// 
     /// 
-    pub async fn new(config: config::ClientConfig) -> Result<Self, iroh::endpoint::BindError> {
+    pub async fn create_and_start(config: config::ClientConfig) -> Result<Self, iroh::endpoint::BindError> {
 
         let endpoint = Endpoint::builder(iroh::endpoint::presets::N0)
             .alpns(vec![ALPN.into()])
@@ -72,48 +70,43 @@ impl Client {
 
 async fn client_loop(endpoint: iroh::Endpoint, token: CancellationToken, broadcast_recv: broadcast::Receiver<()>, send_updates: mpsc::Sender<()>) {
 
-    let state: sync::SharedState = Arc::new(sync::ClientState::new(Vec::new(), Vec::new()));
+    let (send_updates, recv_updates) = tokio::sync::mpsc::channel::<()>(1024);
+    
+    let state: sync::SharedState = Arc::new(sync::ClientState::new(Vec::new(), Vec::new(), send_updates));
 
     let task_handles: Vec<JoinHandle<()>> = Vec::with_capacity(32);
 
-    tokio::select! {
 
-        _ = token.cancelled() => {
-            for task in task_handles {
-                task.abort();
+    loop {
+        tokio::select! {
+    
+            _ = token.cancelled() => {
+                for task in task_handles {
+                    task.abort();
+                }
+                break;
             }
+    
+            maybe_incoming = endpoint.accept() => {
+                let incoming = match maybe_incoming {
+                    None => {return},
+                    Some(incoming) => incoming,
+                };
+    
+                let task = sync::spawn_connection_loop(incoming, state.clone());
+                
+            } 
+    
+    
+    
+    
         }
-
-
-        maybe_incoming = endpoint.accept() => {
-            let incoming = match maybe_incoming {
-                None => {return},
-                Some(incoming) => incoming,
-            };
-
-            let task = sync::spawn_connection_loop(incoming, state.clone());
-            
-        } 
-
-
-
-
     }
-
-
-    let Ok(conn) = incoming.await else {continue};
-
-    screen
-
-    conn.accept_bi().await
-
-
-    todo!();
 }
 
 
 
 
-async fn handle_maybe_incoming(maybe_incoming: Option<Incoming>, blocklist: &RwLock<Vec<iroh::EndpointId>>) -> Incoming {
+async fn handle_maybe_incoming(maybe_incoming: Option<iroh::endpoint::Incoming>, blocklist: &tokio::sync::RwLock<Vec<iroh::EndpointId>>) -> iroh::endpoint::Incoming {
     todo!()
 }

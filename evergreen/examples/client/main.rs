@@ -20,28 +20,40 @@
 use evergreen::prelude::*;
 
 
-const SERVER_LIST: [&str; 1] = ["localhost"];
+const SERVER_LIST: ServerList<[&'static str; 1]> = ServerList(["localhost"]);
+
+const APP_ID: &str = "com.dungenrobot.chatroom";
+
+
+
+
+
+// Do not use this in production. 
+// This thing panics at like every kind of failure. It has zero proper error handling
+async fn quickstart() -> (Client, Identity) {
+    let identity = Identity::generate();
+    let client_config = ClientConfig::new(identity.clone(), RoomTransition::Load);
+    let client = Client::create_and_start(client_config).await?;
+
+    let server_list = SERVER_LIST;
+    
+    let room = SERVER_LIST.find_or_host(APP_ID).await.unwrap();
+
+    let peer_list = SERVER_LIST.find_peers(room.room_id()).await.unwrap();
+
+    client.connect_to_room(room, SERVER_LIST);
+
+    SERVER_LIST.post_status(&identity, room.room_id());
+
+    (client, identity)
+}
+
 
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()>{
 
-    // Set up our client
-    let identity = Identity::generate();
-    let client_config = ClientConfig::default(identity).with_transition(Transition::LOAD);
-    let client_handle = Client::create_and_start(client_config).await?;
-
-
-    let server_list = ["localhost"];
-
-
-    let room = find_room(server_list, "com.dungenrobot.chatroom");
-
-    let client_list = discover_peers(server_list, room);
-
-    client_handle.connect_to_room(room, server_list);
-
-    post_status(server_list, room, identity);
+    let (client, identity) = quickstart().await;
 
     tokio::select! {
         _ = client.stopped().await => {
@@ -68,15 +80,17 @@ async fn main() -> anyhow::Result<()>{
                 NetworkEvent::Packet(sending_peer, data) => {
 
                 },
+                NetworkEvent::StatusRequested(peer, request) => {
 
+                }
 
                 //???
-                NetworkEvent::FriendshipRequested(peer) => {
+                // NetworkEvent::FriendshipRequested(peer) => {
 
-                },
-                NetworkEvent::FriendshipAccepted(peer) => {
+                // },
+                // NetworkEvent::FriendshipAccepted(peer) => {
 
-                },
+                // },
             }
 
 

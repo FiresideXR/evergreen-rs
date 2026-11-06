@@ -90,7 +90,7 @@ impl ClientState {
 
 }
 
-/// Helper method for spawning [connection_loop] in a task
+/// Helper method for spawning a [`connection_loop`](connection_loop) in a task
 pub async fn spawn_connection_loop(incoming: iroh::endpoint::Incoming, state: SharedState) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async {connection_loop(incoming, state)}.await)
 }

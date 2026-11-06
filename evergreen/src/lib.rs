@@ -25,12 +25,16 @@ pub mod types;
 
 pub mod wire;
 
-mod network;
+pub mod network;
 
-mod rooms;
+pub mod rooms;
+
+pub mod discovery;
 
 pub mod prelude {
     pub use crate::types::*;
     pub use crate::client::Client;
-    pub use crate::client::config;
+    pub use crate::client::config::{ClientConfig, RoomTransition};
+    pub use crate::discovery::ServerList;
+    pub use crate::network::NetworkEvent;
 }

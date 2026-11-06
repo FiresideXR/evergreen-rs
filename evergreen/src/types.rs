@@ -18,6 +18,7 @@
 // THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
+use iroh::EndpointId;
 pub use iroh::SecretKey as Identity;
 
 #[derive(Clone, Debug)]
@@ -31,8 +32,8 @@ impl Passport {
 
 
 pub struct PeerInfo {
-    passports: Vec<Passport>,
-    room_id: Option<u64>,
+    pub passports: Vec<Passport>,
+    pub room_id: Option<u64>,
 }
 
 impl PeerInfo {
@@ -43,7 +44,7 @@ impl PeerInfo {
 
 /// Representation of a peer sharing the room with us
 pub struct Peer {
-    identity: Identity,
-    name: String,
-    passports: Vec<Passport>,
+    pub identity: EndpointId,
+    pub name: String,
+    pub passports: Vec<Passport>,
 }
