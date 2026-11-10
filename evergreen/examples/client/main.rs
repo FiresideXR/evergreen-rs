@@ -35,15 +35,15 @@ async fn quickstart() -> (Client, Identity) {
     let client_config = ClientConfig::new(identity.clone(), RoomTransition::Load);
     let client = Client::create_and_start(client_config).await.unwrap();
 
-    let server_list = SERVER_LIST;
-    
     let room = SERVER_LIST.find_or_host(APP_ID).await.unwrap();
 
     let peer_list = SERVER_LIST.find_peers(room.room_id()).await.unwrap();
 
-    client.connect_to_room(room, SERVER_LIST);
+    client.connect_to_peers(&room, &peer_list).await;
 
-    SERVER_LIST.post_status(&identity, room.room_id());
+    client.connect_to_room(&room, &SERVER_LIST).await;
+
+    SERVER_LIST.post_status(&identity, room.room_id()).await;
 
     (client, identity)
 }
@@ -56,11 +56,16 @@ async fn main() -> anyhow::Result<()>{
     let (client, identity) = quickstart().await;
 
     tokio::select! {
-        _ = client.stopped().await => {
+        _ = client.stopped() => {
             return Ok(())
         },
 
-        network_event = client.get_next_event().await => {
+        
+
+        network_event = client.get_next_event() => {
+
+            print!("{:?}", &network_event);
+
             match network_event {
 
                 NetworkEvent::NewRoomJoined(room) => {
@@ -72,7 +77,7 @@ async fn main() -> anyhow::Result<()>{
                 },
                 NetworkEvent::PeerJoined(peer) => {
 
-                    print!("Peer: {} joined room: {} with public key: {:?}", peer.name, peer.room, peer.identity)
+                    print!("Peer: {} joined with public key: {:?}", peer.name, peer.identity)
                 },
                 NetworkEvent::PeerLeft(peer) => {
 
@@ -95,7 +100,7 @@ async fn main() -> anyhow::Result<()>{
 
 
 
-            print!("{:?}", network_event)
+            
         }
     }
 

@@ -43,8 +43,10 @@ impl PeerInfo {
 }
 
 /// Representation of a peer sharing the room with us
+#[derive(Debug)]
 pub struct Peer {
     pub identity: EndpointId,
     pub name: String,
     pub passports: Vec<Passport>,
+    pub dialing_info: Option<String>,
 }

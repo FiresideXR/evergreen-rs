@@ -19,7 +19,7 @@
 
 use sha2::Digest;
 
-
+#[derive(Debug)]
 pub struct Room {
     app_id: String,
     payload: String,

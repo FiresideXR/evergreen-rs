@@ -17,14 +17,18 @@
 // AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
 // THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-use iroh::{Endpoint, protocol::{RouterBuilder, Router}};
+use iroh::{Endpoint, EndpointAddr, protocol::{Router, RouterBuilder}};
 
 use tokio::{sync::{broadcast, mpsc}, task::JoinHandle};
 use tokio_util::sync::CancellationToken;
 
 use std::{collections::HashMap, sync::Arc};
+
 mod sync;
 pub mod config;
+
+use crate::{discovery::ServerList, network::NetworkEvent, rooms::Room};
+use crate::types::Peer;
 
 const ALPN: &'static str =  "evergreen/0.1.0";
 
@@ -81,6 +85,23 @@ impl Client {
     /// This functions takes ownership of a [Client] and then kills it. 
     pub async fn stop_client(self) {
         let _ = self;
+    }
+
+    pub async fn stopped(&self) {
+        self.token.cancelled().await
+    }
+
+    pub async fn connect_to_room<I>(&self, room: &Room, server_list: &ServerList<I>)
+    where for<'a> &'a I: IntoIterator<Item: AsRef<str>> { // I fucking hate this trait definition
+        todo!();
+    }
+
+    pub async fn connect_to_peers(&self, room: &Room, peers: &Vec<EndpointAddr>) {
+        todo!()
+    }
+
+    pub async fn get_next_event(&self) -> NetworkEvent {
+        todo!()
     }
 }
 

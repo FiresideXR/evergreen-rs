@@ -21,15 +21,25 @@ use crate::rooms::Room;
 
 use crate::types::Peer;
 
-pub struct Request;
+use tokio::sync::oneshot;
+
+#[derive(Debug)]
+pub struct Request {
+    inner_sender: oneshot::Sender<bool>
+}
 
 impl Request {
-    pub fn allow(self) {
+    fn new() -> (Self, oneshot::Receiver<bool>) {
+        let (send, recv) = oneshot::channel::<bool>();
+        (Self{inner_sender: send}, recv)
+    }
 
+    pub fn allow(self) {
+        let _ = self.inner_sender.send(true);
     }
 
     pub fn deny(self) {
-
+        let _ = self.inner_sender.send(false);
     }
 }
 
@@ -37,7 +47,7 @@ impl Request {
 
 
 
-
+#[derive(Debug)]
 pub enum NetworkEvent {
     NewRoomJoined(Room),
 
