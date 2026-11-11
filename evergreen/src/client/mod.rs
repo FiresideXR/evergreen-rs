@@ -17,18 +17,17 @@
 // AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
 // THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-use iroh::{Endpoint, EndpointAddr, protocol::{Router, RouterBuilder}};
+use iroh::{Endpoint, EndpointAddr};
 
 use tokio::{sync::{broadcast, mpsc}, task::JoinHandle};
 use tokio_util::sync::CancellationToken;
 
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 mod sync;
 pub mod config;
 
 use crate::{discovery::ServerList, network::NetworkEvent, rooms::Room};
-use crate::types::Peer;
 
 const ALPN: &'static str =  "evergreen/0.1.0";
 
@@ -91,11 +90,11 @@ impl Client {
         self.token.cancelled().await
     }
 
-    pub async fn connect_to_room(&self, room: &Room, server_list: &impl ServerList) { 
+    pub async fn connect_to_room(&self, _room: &Room, _server_list: &impl ServerList) { 
         todo!();
     }
 
-    pub async fn connect_to_peers(&self, room: &Room, peers: &Vec<EndpointAddr>) {
+    pub async fn connect_to_peers(&self, _room: &Room, _peers: &Vec<EndpointAddr>) {
         todo!()
     }
 
@@ -106,9 +105,9 @@ impl Client {
 
 
 
-async fn client_loop(endpoint: iroh::Endpoint, token: CancellationToken, broadcast_recv: broadcast::Receiver<()>, send_updates: mpsc::Sender<()>) {
+async fn client_loop(endpoint: iroh::Endpoint, token: CancellationToken, _broadcast_recv: broadcast::Receiver<()>, _send_updates: mpsc::Sender<()>) {
 
-    let (send_updates, recv_updates) = tokio::sync::mpsc::channel::<()>(1024);
+    let (send_updates, _recv_updates) = tokio::sync::mpsc::channel::<()>(1024);
     
     let state: sync::SharedState = Arc::new(sync::ClientState::new(Vec::new(), Vec::new(), send_updates));
 
@@ -131,13 +130,9 @@ async fn client_loop(endpoint: iroh::Endpoint, token: CancellationToken, broadca
                     Some(incoming) => incoming,
                 };
     
-                let task = sync::spawn_connection_loop(incoming, state.clone());
+                let _task = sync::spawn_connection_loop(incoming, state.clone());
                 
             } 
-    
-    
-    
-    
         }
     }
 }
@@ -145,6 +140,6 @@ async fn client_loop(endpoint: iroh::Endpoint, token: CancellationToken, broadca
 
 
 
-async fn handle_maybe_incoming(maybe_incoming: Option<iroh::endpoint::Incoming>, blocklist: &tokio::sync::RwLock<Vec<iroh::EndpointId>>) -> iroh::endpoint::Incoming {
+async fn handle_maybe_incoming(_maybe_incoming: Option<iroh::endpoint::Incoming>, _blocklist: &tokio::sync::RwLock<Vec<iroh::EndpointId>>) -> iroh::endpoint::Incoming {
     todo!()
 }

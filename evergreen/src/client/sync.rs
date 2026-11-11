@@ -19,8 +19,7 @@
 
 
 use std::sync::Arc;
-use tokio::sync::{RwLock, Mutex, broadcast, mpsc, watch};
-use tokio_util::sync::CancellationToken;
+use tokio::sync::{RwLock, broadcast, mpsc, watch};
 
 use std::collections::HashMap;
 
@@ -115,7 +114,7 @@ pub async fn spawn_connection_loop(incoming: iroh::endpoint::Incoming, state: Sh
 }
 
 
-pub async fn connection_loop(incoming: iroh::endpoint::Incoming, state: SharedState) {
+pub async fn connection_loop(_incoming: iroh::endpoint::Incoming, _state: SharedState) {
 
 
 

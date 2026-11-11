@@ -17,9 +17,6 @@
 // AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH 
 // THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-use std::marker::PhantomData;
-
-use reqwest::{IntoUrl, Response};
 
 use crate::rooms::Room;
 
@@ -41,68 +38,74 @@ pub enum DiscoveryError {
     RoomCreationRefused,
 }
 
-pub trait ServerList {
-    async fn find_rooms(&self, app_id: &str, payload: Option<&str>) -> Result<Vec<Room>, DiscoveryError>;
 
-    async fn find_one_room(&self, app_id: &str, payload: Option<&str>) -> Result<Room, DiscoveryError>;
-
-    async fn find_or_host(&self, app_id: &str) -> Result<Room, DiscoveryError>;
-
-    async fn host(&self, room: Room) -> Result<Room, DiscoveryError>;
-
-    async fn find_peers(&self, room_id: u128) -> Result<Vec<iroh::EndpointAddr>, DiscoveryError>;
-
-    async fn post_status(&self, identity: &Identity, room_id: u128);
-
-    async fn health_check(&self) -> Result<(), u16>;
-}
-
-impl <I> ServerList for I
-where for<'a> &'a I: IntoIterator<Item: AsRef<str>> {
-
+pub trait ServerList: Sync + Send{
     /// Find all rooms matching the provided app_id and (optional) payload.
-    async fn find_rooms(&self, app_id: &str, payload: Option<&str>) -> Result<Vec<Room>, DiscoveryError> {
-
-        let client = new_client()?;
-
-        for url in self {
-
-            let request = client.get(url.as_ref()).header("app_id", app_id);
-
-            if let Ok(response) = request.send().await {
-                todo!("HTTP is unimplemented")
-            }
-        }
-
-
-        return Err(DiscoveryError::NoRoomsExist)
-    }
+    fn find_rooms(&self, app_id: &str, payload: Option<&str>) -> impl std::future::Future<Output = Result<Vec<Room>, DiscoveryError>> + Send;
 
     /// Like ['find_room'](Self::find_rooms) but only returns the first result. 
     /// 
     /// This can run faster because it is 
-    async fn find_one_room(&self, app_id: &str, payload: Option<&str>) -> Result<Room, DiscoveryError> {
-
-        let client = new_client()?;
-
-        for url in self {
-
-            let request = client.get(url.as_ref()).header("app_id", app_id);
-
-            if let Ok(response) = request.send().await {
-                todo!("HTTP is unimplemented")
-            }
-        }
-
-
-        return Err(DiscoveryError::NoRoomsExist)
-
-    }
+    fn find_one_room(&self, app_id: &str, payload: Option<&str>) -> impl std::future::Future<Output = Result<Room, DiscoveryError>> + Send;
 
     /// A convenience method to call [`find_one_room`](Self::find_one_room) followed by
     /// 
     /// This does not allow you to set a payload or set salt for the created room. 
     /// It is assumed that if you are using a method like this, you kinda don't care anyway
+    fn find_or_host(&self, app_id: &str) -> impl std::future::Future<Output = Result<Room, DiscoveryError>> + Send;
+
+    fn host(&self, room: Room) -> impl std::future::Future<Output = Result<Room, DiscoveryError>> + Send;
+
+    fn find_peers(&self, room_id: u128) -> impl std::future::Future<Output = Result<Vec<iroh::EndpointAddr>, DiscoveryError>> + Send;
+
+    fn post_status(&self, identity: &Identity, room_id: u128) -> impl std::future::Future<Output = ()> + Send;
+
+    fn health_check(&self) -> impl std::future::Future<Output = Result<(), u16>> + Send;
+}
+
+impl <I: Sync + Send> ServerList for I
+where 
+    for<'a> &'a I: IntoIterator<Item: AsRef<str> + Send>,
+
+    // I don't know why I need this line but I'm gonna try to not worry about it
+    for<'a> <&'a I as IntoIterator>::IntoIter: Send, 
+{
+
+    async fn find_rooms(&self, app_id: &str, _payload: Option<&str>) -> Result<Vec<Room>, DiscoveryError> {
+
+        let client = new_client()?;
+
+        for url in self {
+
+            let request = client.get(url.as_ref()).header("app_id", app_id);
+
+            if let Ok(_response) = request.send().await {
+                todo!("HTTP is unimplemented")
+            }
+        }
+
+        return Err(DiscoveryError::NoRoomsExist)
+    }
+
+    async fn find_one_room(&self, app_id: &str, _payload: Option<&str>) -> Result<Room, DiscoveryError> {
+
+        let client = new_client()?;
+
+        for url in self {
+
+            let request = client.get(url.as_ref()).header("app_id", app_id);
+
+            if let Ok(_response) = request.send().await {
+                todo!("HTTP is unimplemented")
+            }
+        }
+
+
+        return Err(DiscoveryError::NoRoomsExist)
+
+    }
+
+    
     async fn find_or_host(&self, app_id: &str) -> Result<Room, DiscoveryError> {
 
         match self.find_one_room(app_id, None).await {
@@ -121,7 +124,7 @@ where for<'a> &'a I: IntoIterator<Item: AsRef<str>> {
                 .header("payload", room.payload())
                 .header("salt", format!("{:#X}", room.room_id()));
 
-            if let Ok(response) = request.send().await {
+            if let Ok(_response) = request.send().await {
                 todo!("HTTP is unimplemented")
             };
         }
@@ -131,12 +134,12 @@ where for<'a> &'a I: IntoIterator<Item: AsRef<str>> {
     }
 
 
-    async fn find_peers(&self, room_id: u128) -> Result<Vec<iroh::EndpointAddr>, DiscoveryError> {
+    async fn find_peers(&self, _room_id: u128) -> Result<Vec<iroh::EndpointAddr>, DiscoveryError> {
         todo!()
     }
 
     // if this fails, is it even our problem?
-    async fn post_status(&self, identity: &Identity, room_id: u128) {
+    async fn post_status(&self, _identity: &Identity, _room_id: u128) {
 
     }
 
