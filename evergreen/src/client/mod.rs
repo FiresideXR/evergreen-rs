@@ -91,8 +91,7 @@ impl Client {
         self.token.cancelled().await
     }
 
-    pub async fn connect_to_room<I>(&self, room: &Room, server_list: &ServerList<I>)
-    where for<'a> &'a I: IntoIterator<Item: AsRef<str>> { // I fucking hate this trait definition
+    pub async fn connect_to_room(&self, room: &Room, server_list: &impl ServerList) { 
         todo!();
     }
 

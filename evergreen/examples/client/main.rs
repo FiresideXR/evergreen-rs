@@ -20,7 +20,7 @@
 use evergreen::prelude::*;
 
 
-const SERVER_LIST: ServerList<[&'static str; 1]> = ServerList(["localhost"]);
+const SERVER_LIST: [&'static str; 1] = ["localhost"];
 
 const APP_ID: &str = "com.dungenrobot.chatroom";
 

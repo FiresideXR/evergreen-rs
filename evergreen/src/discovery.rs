@@ -41,26 +41,31 @@ pub enum DiscoveryError {
     RoomCreationRefused,
 }
 
+pub trait ServerList {
+    async fn find_rooms(&self, app_id: &str, payload: Option<&str>) -> Result<Vec<Room>, DiscoveryError>;
 
-/// 
-/// 
-/// This was designed to be able to take in anything from `[String]` to `Vec<&str>` so the generics 
-/// and lifetimes look softly like a nightmare
-pub struct ServerList<I>(pub I)
-where for<'a> &'a I: IntoIterator<Item: AsRef<str>>;
+    async fn find_one_room(&self, app_id: &str, payload: Option<&str>) -> Result<Room, DiscoveryError>;
 
+    async fn find_or_host(&self, app_id: &str) -> Result<Room, DiscoveryError>;
 
+    async fn host(&self, room: Room) -> Result<Room, DiscoveryError>;
 
-impl <I> ServerList<I> 
-where for<'a> &'a I: IntoIterator<Item: AsRef<str>>
-{
+    async fn find_peers(&self, room_id: u128) -> Result<Vec<iroh::EndpointAddr>, DiscoveryError>;
+
+    async fn post_status(&self, identity: &Identity, room_id: u128);
+
+    async fn health_check(&self) -> Result<(), u16>;
+}
+
+impl <I> ServerList for I
+where for<'a> &'a I: IntoIterator<Item: AsRef<str>> {
 
     /// Find all rooms matching the provided app_id and (optional) payload.
-    pub async fn find_rooms(&self, app_id: &str, payload: Option<&str>) -> Result<Vec<Room>, DiscoveryError> {
+    async fn find_rooms(&self, app_id: &str, payload: Option<&str>) -> Result<Vec<Room>, DiscoveryError> {
 
         let client = new_client()?;
 
-        for url in &self.0 {
+        for url in self {
 
             let request = client.get(url.as_ref()).header("app_id", app_id);
 
@@ -76,11 +81,11 @@ where for<'a> &'a I: IntoIterator<Item: AsRef<str>>
     /// Like ['find_room'](Self::find_rooms) but only returns the first result. 
     /// 
     /// This can run faster because it is 
-    pub async fn find_one_room(&self, app_id: &str, payload: Option<&str>) -> Result<Room, DiscoveryError> {
+    async fn find_one_room(&self, app_id: &str, payload: Option<&str>) -> Result<Room, DiscoveryError> {
 
         let client = new_client()?;
 
-        for url in &self.0 {
+        for url in self {
 
             let request = client.get(url.as_ref()).header("app_id", app_id);
 
@@ -98,7 +103,7 @@ where for<'a> &'a I: IntoIterator<Item: AsRef<str>>
     /// 
     /// This does not allow you to set a payload or set salt for the created room. 
     /// It is assumed that if you are using a method like this, you kinda don't care anyway
-    pub async fn find_or_host(&self, app_id: &str) -> Result<Room, DiscoveryError> {
+    async fn find_or_host(&self, app_id: &str) -> Result<Room, DiscoveryError> {
 
         match self.find_one_room(app_id, None).await {
             Ok(room) => Ok(room),
@@ -106,10 +111,10 @@ where for<'a> &'a I: IntoIterator<Item: AsRef<str>>
         }
     }
 
-    pub async fn host(&self, room: Room) -> Result<Room, DiscoveryError> {
+    async fn host(&self, room: Room) -> Result<Room, DiscoveryError> {
         let client = new_client()?;
 
-        for url in &self.0 {
+        for url in self {
 
             let request = client.post(url.as_ref())
                 .header("app_id", room.app_id())
@@ -126,19 +131,19 @@ where for<'a> &'a I: IntoIterator<Item: AsRef<str>>
     }
 
 
-    pub async fn find_peers(&self, room_id: u128) -> Result<Vec<iroh::EndpointAddr>, DiscoveryError> {
+    async fn find_peers(&self, room_id: u128) -> Result<Vec<iroh::EndpointAddr>, DiscoveryError> {
         todo!()
     }
 
     // if this fails, is it even our problem?
-    pub async fn post_status(&self, identity: &Identity, room_id: u128) {
+    async fn post_status(&self, identity: &Identity, room_id: u128) {
 
     }
 
     /// Pings all urls.
     /// 
     /// Returns either an Ok or an Err with how many servers refused to respond.
-    pub async fn health_check(&self) -> Result<(), u16> {
+    async fn health_check(&self) -> Result<(), u16> {
 
 
 
